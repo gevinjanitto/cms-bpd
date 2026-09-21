@@ -1,0 +1,19 @@
+{
+  "summary": "Verified auth fix + MaiHarta developer credit footers end-to-end. Backend login (API) succeeds with admin/bpdjaya3x after BOOTSTRAP_PASSWORD re-hash logic. UI login via /login page works with mocked captcha id (planted in DB); wrong password shows exact expected error and correct password reaches dashboard. Developer credit is present with correct text, https://www.maiharta.com href, and target=_blank on login panel footer, login page footer, and app footer. Sidebar navigation (Dashboard/Ketentuan/Kuis) works with no errors. No compile overlay present (three/@react-three/fiber install is healthy).",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": ["/app/test_reports/artifacts_iter4_dashboard.jpeg"],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth.py initialize_auth now correctly re-hashes when stored bcrypt does not match BOOTSTRAP_PASSWORD and clears lockout — root cause of the login regression is addressed.",
+    "DeveloperCredit component in branding.js is reused across all three footers (login-panel, login-page, app) with data-testid + target=_blank + rel=noopener noreferrer — matches spec.",
+    "Minor: Login.jsx lazy-loads @react-three/fiber; ensure package.json pins it so future environments do not break with 'Compiled with problems'."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "test_credentials": "admin / bpdjaya3x (from /app/memory/test_credentials.md). CAPTCHA planted via db.captchas insert with sha256('<id>:ABC123').",
+  "seed_data_creation": "Inserted two DB captcha docs (test-e2e-ok, test-e2e-bad) with known answer ABC123; single-use, auto-expires. Playwright route interceptor rewrote /api/auth/captcha response id.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "For UI login tests, plant captcha in db.captchas with hash of '<id>:<answer>', then intercept /api/auth/captcha with page.route to substitute the id field. Do NOT retry wrong password more than 1x per account (5-min lockout after 3 fails, 423)."
+}
