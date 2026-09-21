@@ -1,0 +1,271 @@
+{
+  "project_name": "CMS Bank BPD Bali - Compliance Management System & Edukasi Regulasi",
+  "document_reference": "Lampiran Surat KAK (Kerangka Acuan Kerja) - Sistem Informasi Kepatuhan Bank BPD Bali",
+  "app_type": "dashboard",
+  "theme_strategy": {
+    "default_theme": "light",
+    "theme_toggle": true,
+    "theme_nuance": "Bank BPD Bali Emerald & Forest Green Nuance with warm golden Balinese accents and crisp financial slate contrast",
+    "rationale": "Sistem kepatuhan perbankan membutuhkan tingkat kepercayaan, presisi, kejelasan dokumen regulasi perbankan, dan kenyamanan membaca naskah SK/POJK/SE OJK yang panjang. Nuansa hijau Bank BPD Bali dipadukan dengan aksen emas teratai melambangkan integritas, pertumbuhan berkelanjutan, dan kemakmuran nasabah."
+  },
+  "brand_assets": {
+    "official_logo_url": "https://customer-assets-m6fa6gv7.emergentagent.net/job_283eb062-afd4-459d-9507-f84f42e09f9a/artifacts/mzkw1aog_image%201.png",
+    "brand_name": "Bank BPD Bali",
+    "application_title": "CMS BPD Bali (Compliance Management System)",
+    "application_subtitle": "Portal Manajemen Regulasi, Kuis Kepatuhan & Monitoring Unit Kerja",
+    "supporting_imagery": {
+      "executive_discussion": "https://images.unsplash.com/photo-1714974528718-b3b52f91c334?crop=entropy&cs=srgb&fm=jpg&q=85",
+      "auditor_specialist": "https://images.pexels.com/photos/8278977/pexels-photo-8278977.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "team_collaboration": "https://images.pexels.com/photos/8353765/pexels-photo-8353765.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=650&w=940",
+      "bali_heritage_accent": "https://images.unsplash.com/photo-1711609110590-5ad5c4599e56?crop=entropy&cs=srgb&fm=jpg&q=85"
+    }
+  },
+  "typography": {
+    "font_pairings": {
+      "headings": "Cabinet Grotesk, Manrope, -apple-system, sans-serif",
+      "subheadings": "Outfit, Manrope, sans-serif",
+      "body": "IBM Plex Sans, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif",
+      "numbers_and_metrics": "Cabinet Grotesk, Outfit, tabular-nums",
+      "regulatory_code_and_audit": "IBM Plex Mono, Menlo, monospace"
+    },
+    "hierarchy_scale": {
+      "h1_page_title": "text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-emerald-950 dark:text-emerald-50",
+      "h2_section_header": "text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100",
+      "h3_card_title": "text-base sm:text-lg font-semibold tracking-tight text-slate-800 dark:text-slate-200",
+      "eyebrow_badge": "text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/60 px-2.5 py-0.5 rounded-full",
+      "metric_value": "text-2xl sm:text-3xl font-extrabold tracking-tight tabular-nums text-slate-900 dark:text-white",
+      "metric_label": "text-xs sm:text-sm font-medium text-slate-500 dark:text-slate-400",
+      "body_text": "text-sm leading-relaxed text-slate-600 dark:text-slate-300",
+      "caption_meta": "text-xs text-slate-400 dark:text-slate-500"
+    },
+    "banned_fonts": ["Inter for headings", "Comic Sans", "Papyrus", "Space Grotesk for banking dashboards"]
+  },
+  "color_palette": {
+    "primary_brand_green": {
+      "50": "#f0fdf4",
+      "100": "#dcfce7",
+      "200": "#bbf7d0",
+      "300": "#86efac",
+      "400": "#4ade80",
+      "500": "#22c55e",
+      "600": "#16a34a",
+      "700": "#15803d",
+      "800": "#166534",
+      "900": "#14532d",
+      "950": "#052e16",
+      "css_token": "bg-[#0B6623] text-white hover:bg-[#084d1a]"
+    },
+    "accent_gold_yellow": {
+      "50": "#fefce8",
+      "100": "#fef9c3",
+      "200": "#fef08a",
+      "300": "#fde047",
+      "400": "#facc15",
+      "500": "#eab308",
+      "600": "#ca8a04",
+      "700": "#a16207",
+      "rationale": "Sesuai logo Bank BPD Bali bunga teratai bermahkota 8 dan tulisan BPD berwarna kuning emas lambang kemakmuran"
+    },
+    "semantic_colors": {
+      "compliance_pass": "text-emerald-700 bg-emerald-50 border-emerald-200 dark:text-emerald-300 dark:bg-emerald-950/60 dark:border-emerald-800",
+      "compliance_warning": "text-amber-700 bg-amber-50 border-amber-200 dark:text-amber-300 dark:bg-amber-950/60 dark:border-amber-800",
+      "compliance_danger": "text-rose-700 bg-rose-50 border-rose-200 dark:text-rose-300 dark:bg-rose-950/60 dark:border-rose-800",
+      "info_internal": "text-sky-700 bg-sky-50 border-sky-200 dark:text-sky-300 dark:bg-sky-950/60 dark:border-sky-800",
+      "info_external": "text-teal-700 bg-teal-50 border-teal-200 dark:text-teal-300 dark:bg-teal-950/60 dark:border-teal-800"
+    },
+    "surface_colors": {
+      "sidebar_light": "#052e16",
+      "sidebar_foreground_light": "#ffffff",
+      "sidebar_active_light": "#15803d",
+      "main_bg_light": "#f8fafc",
+      "card_bg_light": "#ffffff",
+      "card_border_light": "#e2e8f0",
+      "sidebar_dark": "#031c0e",
+      "main_bg_dark": "#090d0b",
+      "card_bg_dark": "#111814",
+      "card_border_dark": "#1e2c24"
+    }
+  },
+  "role_personas_and_permissions": {
+    "roles": [
+      {
+        "id": "administrator",
+        "name": "Administrator Kepatuhan & Tata Kelola",
+        "badge": "Superadmin CMS",
+        "description": "Mengelola seluruh regulasi, kurasi naskah, pembuatan bank soal kuis, penargetan unit kerja, manajemen user, dan audit trail.",
+        "accessible_menus": ["dashboard", "regulasi", "kuis_manajemen", "monitoring_unit", "manajemen_user", "audit_trail", "pengaturan_sistem"]
+      },
+      {
+        "id": "supervisor",
+        "name": "Supervisor / Kepala Divisi / Pimpinan Cabang",
+        "badge": "Verifikator & Reviewer",
+        "description": "Melakukan review naskah regulasi internal, approval publikasi, review penilaian essay pegawai unit kerjanya, serta memantau tingkat kelulusan staf cabang.",
+        "accessible_menus": ["dashboard", "regulasi", "verifikasi_dokumen", "penilaian_essay", "monitoring_unit", "audit_trail"]
+      },
+      {
+        "id": "employee",
+        "name": "Pegawai / Staf Operasional BPD Bali",
+        "badge": "Peserta Edukasi",
+        "description": "Membaca & mengunduh dokumen regulasi, mengerjakan kuis regulasi aktif, melihat skor dan feedback kelulusan, serta riwayat sertifikat kepatuhan.",
+        "accessible_menus": ["dashboard_pegawai", "katalog_regulasi", "kuis_saya", "hasil_dan_skor", "notifikasi"]
+      },
+      {
+        "id": "director",
+        "name": "Direksi & Dewan Komisaris",
+        "badge": "Executive Viewer",
+        "description": "Melihat aggregated executive compliance index, unit kerja dengan skor terendah vs tertinggi, status risiko kepatuhan OJK/BI, dan riwayat audit trail strategis.",
+        "accessible_menus": ["dashboard_eksekutif", "monitoring_unit", "laporan_kepatuhan", "audit_trail"]
+      }
+    ],
+    "switcher_placement": "Top navigation bar (Quick Switcher Pill) with quick dropdown or banner so reviewers can freely test all 4 KAK perspectives instantly."
+  },
+  "core_screen_blueprints": {
+    "layout_structure": {
+      "sidebar": "Fixed left rail (w-64 or w-72) with rich emerald styling, Bank BPD Bali official logo on top, division indicator 'Divisi Kepatuhan & Tata Kelola', organized by categorized sections: Ringkasan, Dokumen Regulasi, Kuis & Ujian, Monitoring & Analitik, Administrasi.",
+      "top_header": "Sticky glass header (h-16, backdrop-blur-xl bg-white/90 dark:bg-emerald-950/80 border-b border-slate-200 dark:border-emerald-900/60 z-30) containing: Global Search (Regulasi, Nomor SK, Topik Kuis), Quick Role Switcher (Admin/Supervisor/Pegawai/Direksi), Notifikasi Bell badge (misal: 'Kuis Anti-Pencucian Uang wajib diisi H-3'), Light/Dark Theme toggle, User Profile dropdown with branch name (e.g., 'KC Renon, Denpasar').",
+      "main_canvas": "Generous spacing (p-6 sm:p-8 lg:p-10), max-w-[1600px] mx-auto, high-contrast typography, crisp borders with nested rounded-xl radiuses."
+    },
+    "screen_1_executive_and_admin_dashboard": {
+      "page_id": "dashboard",
+      "title": "Dashboard Kepatuhan & Partisipasi Kuis Regulasi",
+      "subtitle": "Ringkasan metrik kepatuhan perbankan terintegrasi seluruh kantor cabang & unit kerja Bank BPD Bali",
+      "bento_grid_structure": {
+        "kpi_strip": "4-column responsive grid (col-span-1 each): 1. Indeks Kepatuhan Rata-Rata (e.g. 94.2% - Target OJK: >85%), 2. Partisipasi Kuis Aktif (e.g. 1,842 / 2,150 Pegawai - 85.7%), 3. Tingkat Kelulusan Pertama (88.4% passing grade min 75), 4. Dokumen Regulasi Aktif (312 Internal SK & 148 Regulasi OJK/BI).",
+        "hero_chart_widget": "col-span-12 lg:col-span-8: Trend Partisipasi & Rata-rata Skor per Bulan (Jan - Des 2026) dengan breakdown Kuis APU PPT, Perlindungan Konsumen, Tata Kelola IT, dan Fraud Awareness. Menggunakan Recharts AreaChart bergradien emerald & amber.",
+        "distribution_widget": "col-span-12 lg:col-span-4: Distribusi Kategori Regulasi (Donut PieChart) & Status Kuis (Selesai, Sedang Berjalan, Belum Memulai).",
+        "branch_performance_bento": "col-span-12 lg:col-span-7: Komparasi Tingkat Partisipasi Antar Kantor Cabang (Top 5 Cabang Tertinggi vs 5 Cabang Terendah / Perlu Perhatian) lengkap dengan tombol 'Kirim Notifikasi Pengingat ke Pimpinan Cabang'.",
+        "action_required_bento": "col-span-12 lg:col-span-5: Daftar Tugas Segera (Review Dokumen Menunggu Approval Supervisor, 18 Jawaban Essay Butuh Penilaian, 3 Kuis Mendekati Deadline)."
+      }
+    },
+    "screen_2_regulatory_repository": {
+      "page_id": "regulasi",
+      "title": "Repositori Dokumen Regulasi Internal & Eksternal",
+      "subtitle": "Pengarsipan, kurasi naskah, metadata regulasi, upload dokumen, alur review-approve-publish, dan pengunduhan PDF resmi",
+      "features": [
+        "Filter multi-dimensi: Tipe Regulasi (Internal: SK Direksi, SE, SOP, Pedoman Kerja | Eksternal: POJK, SEOJK, PBI, UU Perbankan, FATF)",
+        "Search bar instan dengan highlight kata kunci, nomor dokumen, tanggal berlaku, dan tag kepatuhan",
+        "Modal Tambah Regulasi Baru: Upload file PDF simulasi, nomor dokumen, judul, tanggal terbit, tanggal kadaluarsa/revisi, unit pemilik (Divisi Kepatuhan, Divisi TI, Divisi Risiko), tingkat kerahasiaan (Internal Bank, Rahasia, Publik)",
+        "Alur Status Siklus Dokumen: Draft -> Menunggu Review Supervisor -> Disetujui -> Diterbitkan (Published) -> Kedaluwarsa/Arsip",
+        "Tombol aksi interaktif: Preview Dokumen Viewer interaktif, Download PDF, Buat Kuis Terkait dari Dokumen Ini, Riwayat Revisi"
+      ]
+    },
+    "screen_3_quiz_management_authoring": {
+      "page_id": "kuis_manajemen",
+      "title": "Manajemen & Pembuatan Kuis Regulasi",
+      "subtitle": "Penyusunan modul edukasi berkala, penetapan passing grade, bank soal Pilihan Ganda & Essay, dan penargetan unit kerja",
+      "features": [
+        "Form Pembuatan Kuis Lengkap: Judul kuis, asosiasi dokumen regulasi acuan (linked document), durasi (menit), passing grade (misal: 75/100), jumlah percobaan (attempt limit), periode aktif (tanggal mulai - tanggal selesai)",
+        "Targeting Peserta Khusus: Pilihan Semua Pegawai, Khusus Unit Tertentu (misal: CS & Teller, Analis Kredit, IT & Cyber, Pejabat Eksekutif), atau Level Jabatan",
+        "Question Builder Dinamis: Soal Pilihan Ganda (opsi A/B/C/D dengan kunci jawaban & penjelasan edukasi) dan Soal Essay (dengan pedoman rubrik penilaian penguji)",
+        "Status Kuis: Draft, Menunggu Review, Terjadwal, Sedang Berlangsung, Ditutup",
+        "Tombol 'Publish Kuis & Kirim Notifikasi' yang langsung memunculkan kuis di dashboard pegawai"
+      ]
+    },
+    "screen_4_employee_quiz_taking_experience": {
+      "page_id": "kuis_saya",
+      "title": "Ujian & Edukasi Kepatuhan Pegawai",
+      "subtitle": "Antarmuka interaktif bagi staf perbankan untuk menyelesaikan uji pemahaman kepatuhan regulasi secara objektif",
+      "features": [
+        "Pemberitahuan pra-kuis: Informasi durasi waktu, passing grade, bobot soal, aturan integritas perbankan",
+        "Mode Kuis Interaktif: Countdown timer sticky, navigasi nomor soal (palette nomor soal 1-10 dengan indikator ragu-ragu/terjawab), soal pilihan ganda interaktif dengan visual radio cards yang responsif",
+        "Soal Essay: Input teks area kaya dengan word counter dan panduan studi kasus kepatuhan",
+        "Modal Konfirmasi Pengumpulan: Peringatan jika ada nomor soal belum terjawab",
+        "Layar Hasil Instan (Instant Scoring & Feedback): Skor kelulusan (Lulus/Tidak Lulus), penjelasan materi benar/salah, kunci edukasi OJK, serta tombol cetak/unduh Sertifikat Bukti Pemahaman Kepatuhan"
+      ]
+    },
+    "screen_5_monitoring_and_unit_comparison": {
+      "page_id": "monitoring_unit",
+      "title": "Monitoring Kepatuhan & Analitik Unit Kerja",
+      "subtitle": "Pemantauan komprehensif partisipasi per cabang, daftar pegawai belum ikut kuis, dan ranking kepatuhan",
+      "features": [
+        "Tabel Komparasi Kantor Cabang (27 Unit Kerja): Total Pegawai, Pegawai Sudah Ikut, Belum Ikut, Tingkat Kelulusan %, Rata-rata Skor",
+        "Tab Khusus: 'Daftar Pegawai Belum Berpartisipasi (Never Participated)' dengan filter Cabang dan tombol aksi 'Kirim Notifikasi Pengingat Massal'",
+        "Tab Khusus: 'Hasil Essay Menunggu Verifikasi Penilai' oleh Supervisor/Admin dengan formulir input skor dan feedback konstruktif",
+        "Fitur Ekspor Laporan: Download Excel/CSV dan Ringkasan PDF Laporan Kepatuhan untuk OJK/Direksi"
+      ]
+    },
+    "screen_6_user_management_and_audit_trail": {
+      "page_id": "audit_trail",
+      "title": "Tata Kelola Pengguna & Jejak Audit (Audit Trail)",
+      "subtitle": "Pencatatan rekam jejak kepatuhan perbankan tanpa celah sesuai standar Good Corporate Governance (GCG)",
+      "features": [
+        "Manajemen Pengguna: Daftar pegawai BPD Bali, NIK, Nama, Unit Kerja, Jabatan, Role CMS, Status Akun (Aktif/Nonaktif), Simulasi tambah user baru",
+        "Audit Trail Logger Real-Time: Timestamp presisi detik, User ID, Nama Pegawai, Alamat IP simulasi, Modul, Tipe Aksi (LOGIN, CREATE_QUIZ, APPROVE_DOC, SUBMIT_EXAM, UPDATE_SCORE, EXPORT_REPORT), Detail Payload Aksi",
+        "Filter Audit Trail: Rentang Tanggal, Tingkat Kepentingan (INFO, WARNING, CRITICAL), Pencarian Nama atau ID"
+      ]
+    }
+  },
+  "visual_enhancers": {
+    "bank_nuance_decorations": {
+      "glassmorphism_scrim": "backdrop-blur-md bg-white/85 dark:bg-emerald-950/70 border border-emerald-900/10 dark:border-emerald-500/15 shadow-sm",
+      "lotus_gold_highlight": "border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent",
+      "tactile_badges": "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold tracking-wide transition-all shadow-xs",
+      "table_striping": "hover:bg-emerald-50/50 dark:hover:bg-emerald-950/30 transition-colors duration-150"
+    },
+    "chart_palette": {
+      "series_primary": "#15803d",
+      "series_secondary": "#eab308",
+      "series_tertiary": "#0284c7",
+      "series_quaternary": "#e11d48",
+      "series_neutral": "#64748b"
+    }
+  },
+  "accessibility_and_contrast": {
+    "minimum_contrast_ratio": "4.5:1 untuk teks biasa dan 3:1 untuk label besar sesuai standar WCAG AA / APCA",
+    "text_colors": {
+      "on_emerald_900_sidebar": "#ffffff (kontras 14:1) dengan subteks #bbf7d0 (kontras 8.5:1)",
+      "on_white_cards": "text-slate-900 (#0f172a) dan text-slate-700 (#334155)",
+      "on_dark_cards": "text-slate-50 (#f8fafc) dan text-slate-300 (#cbd5e1)"
+    },
+    "interactive_feedback": {
+      "hover_rule": "Setiap elemen tombol atau interaktif wajib mendefinisikan warna hover spesifik dengan teks kontras tinggi, contoh: 'hover:bg-emerald-700 hover:text-white'",
+      "focus_rule": "focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+    }
+  },
+  "data_test_id_conventions": {
+    "pattern": "kebab-case fungsional peran elemen",
+    "required_test_ids": [
+      "logo-bank-bpd-bali",
+      "role-switcher-dropdown",
+      "role-switcher-option-administrator",
+      "role-switcher-option-supervisor",
+      "role-switcher-option-employee",
+      "role-switcher-option-director",
+      "global-search-input",
+      "theme-toggle-button",
+      "nav-menu-dashboard",
+      "nav-menu-regulasi",
+      "nav-menu-kuis",
+      "nav-menu-monitoring",
+      "nav-menu-audit",
+      "stat-indeks-kepatuhan",
+      "stat-partisipasi-kuis",
+      "stat-kelulusan-pertama",
+      "stat-dokumen-aktif",
+      "btn-upload-regulasi-baru",
+      "btn-buat-kuis-baru",
+      "input-filter-regulasi",
+      "select-kategori-regulasi",
+      "table-regulasi-list",
+      "btn-preview-regulasi",
+      "btn-unduh-regulasi",
+      "btn-mulai-kuis-pegawai",
+      "quiz-timer-countdown",
+      "quiz-question-option",
+      "quiz-submit-button",
+      "quiz-result-score-badge",
+      "btn-reminder-cabang-massal",
+      "table-monitoring-cabang",
+      "table-audit-trail-log"
+    ]
+  },
+  "instructions_to_main_agent": [
+    "Prioritaskan antarmuka dalam BAHASA INDONESIA formal standar perbankan (e.g., 'Kepatuhan', 'Regulasi', 'Unit Kerja', 'Passing Grade', 'Audit Trail', 'Tata Kelola', 'Kantor Cabang').",
+    "Gunakan logo resmi Bank BPD Bali yang diberikan di URL: https://customer-assets-m6fa6gv7.emergentagent.net/job_283eb062-afd4-459d-9507-f84f42e09f9a/artifacts/mzkw1aog_image%201.png secara proporsional di sidebar header dan landing/login bar.",
+    "Wajib sediakan Role Switcher instan di top navbar yang memungkinkan penguji berpindah dengan 1 klik antara 4 Persona KAK: Administrator Kepatuhan, Supervisor/Reviewer, Pegawai (Peserta Ujian), dan Direksi (Executive). Konten layar dan hak akses tombol otomatis menyesuaikan persona yang dipilih.",
+    "Pastikan seluruh alur operasional utama KAK berfungsi mulus secara lokal (mock state realistis tersimpan di localStorage/React state): (1) Eksplorasi & download dokumen regulasi, (2) Pembuatan kuis baru dengan passing grade & penargetan unit, (3) Pengerjaan kuis oleh pegawai dengan timer, submit, dan skor langsung, (4) Supervisor menilai essay & approve dokumen, (5) Monitoring komparasi unit kerja & daftar 'Belum Berpartisipasi' dengan tombol kirim reminder, (6) Audit trail yang otomatis bertambah saat aksi dilakukan.",
+    "Gunakan komponen visual yang kaya: Recharts untuk grafik tren kepatuhan & pie chart distribusi, Lucide Icons untuk indikator status, Sonner toast untuk feedback aksi (notifikasi sukses, approval berhasil, kuis terkirim).",
+    "Perhatikan bahwa file proyek menggunakan ekstensi .js dan .jsx (bukan .tsx), sehingga jangan gunakan sintaks tipe TypeScript yang merusak build React.",
+    "Patuhi palet nuansa hijau Bank BPD Bali (Emerald-800/Emerald-700/Forest Green) berpadu aksen emas (Amber-500) dan jangan gunakan background transparan polos tanpa blur atau latar warna pada dropdown, popover, maupun header."
+  ]
+}
