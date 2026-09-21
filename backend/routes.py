@@ -1,11 +1,11 @@
-import os, secrets, hashlib, io
-from urllib.parse import quote
+import os, secrets, hashlib, io, time
+from urllib.parse import quote, urlparse
 from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
-from core import db, now, uid, current_user, require, audit, notify, get_doc, Record
+from core import db, now, uid, current_user, require, audit, notify, get_doc, Record, invalidate_settings
 from storage import put_object, get_object
 
 router = APIRouter()
@@ -32,7 +32,15 @@ class UserInput(BaseModel):
     role: Literal['employee', 'supervisor', 'director'] = 'employee'
 
 @router.get('/health')
-async def health(): return {'status': 'ok'}
+async def health(db_check: bool = False):
+    if not db_check: return {'status': 'ok'}
+    started = time.perf_counter()
+    await db.command('ping')
+    ping_ms = round((time.perf_counter() - started) * 1000)
+    started = time.perf_counter()
+    await db.results.find({}, {'_id': 0}).to_list(300)
+    host = urlparse(os.environ['MONGO_URL']).hostname or ''
+    return {'status': 'ok', 'db_ping_ms': ping_ms, 'db_fetch_300_results_ms': round((time.perf_counter() - started) * 1000), 'db_host_suffix': '.'.join(host.split('.')[-2:])}
 
 @router.get('/auth/me', response_model=Record)
 async def me(user=Depends(current_user)): return user
@@ -145,6 +153,7 @@ async def settings(user=Depends(current_user)): return await db.settings.find_on
 async def save_settings(body: SettingsInput, request: Request, user=Depends(current_user)):
     require(user, 'administrator')
     await db.settings.update_one({'id': 'main'}, {'$set': body.model_dump()})
+    invalidate_settings()
     await audit(user, 'UPDATE', 'Parameter', 'Memperbarui parameter aplikasi', request)
     return await db.settings.find_one({'id': 'main'}, {'_id': 0})
 

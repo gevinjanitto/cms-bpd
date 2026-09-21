@@ -2,6 +2,7 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
 from core import db, client
 from seed import seed_data
 from routes import router
@@ -20,6 +21,7 @@ async def lifespan(app):
     client.close()
 
 app = FastAPI(title='COMPLIANCE MANAGEMENT SYSTEM Bank BPD Bali', lifespan=lifespan)
+app.add_middleware(GZipMiddleware, minimum_size=1000)
 app.add_middleware(CORSMiddleware, allow_origins=os.environ['CORS_ORIGINS'].split(','), allow_credentials=False, allow_methods=['*'], allow_headers=['*'])
 app.include_router(router, prefix='/api')
 app.include_router(quiz_router, prefix='/api')

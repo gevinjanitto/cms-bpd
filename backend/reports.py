@@ -1,4 +1,4 @@
-import csv, io
+import csv, io, asyncio
 from datetime import datetime, date
 from fastapi import APIRouter, Depends, Request, HTTPException
 from fastapi.responses import Response
@@ -20,14 +20,15 @@ def in_period(value, period):
     return False
 
 async def aggregate(unit='', period='', user=None):
-    users = await db.users.find({'role': 'employee', 'active': True}, {'_id': 0}).to_list(10000)
+    users, quizzes = await asyncio.gather(
+        db.users.find({'role': 'employee', 'active': True}, {'_id': 0}).to_list(10000),
+        db.quizzes.find({'status':'published', 'is_deleted': {'$ne':True}}, {'_id':0, 'questions':0}).to_list(1000))
     if unit: users = [u for u in users if u['unit']==unit]
     if user and user['role']=='employee': users = [u for u in users if u['id']==user['id']]
-    quizzes = await db.quizzes.find({'status':'published', 'is_deleted': {'$ne':True}}, {'_id':0}).to_list(1000)
     quizzes = [q for q in quizzes if in_period(q['start_date'],period)]
     ids = {u['id'] for u in users}
     qids = {q['id'] for q in quizzes}
-    results = await db.results.find({'quiz_id': {'$in':list(qids)}, 'user_id': {'$in':list(ids)}}, {'_id':0}).to_list(100000)
+    results = await db.results.find({'quiz_id': {'$in':list(qids)}, 'user_id': {'$in':list(ids)}}, {'_id':0, 'answers':0, 'essay_scores':0}).to_list(100000)
     pairs = {(q['id'],u['id']) for q in quizzes for u in users if eligible(q,u)}
     results = [r for r in results if (r['quiz_id'],r['user_id']) in pairs]
     done = {(r['quiz_id'],r['user_id']) for r in results}
@@ -36,8 +37,7 @@ async def aggregate(unit='', period='', user=None):
 
 @router.get('/dashboard')
 async def dashboard(unit: str='', period: str='', user=Depends(current_user)):
-    users,quizzes,results,pairs,pending = await aggregate(unit,period,user)
-    docs = await db.documents.find({'is_deleted': {'$ne':True}}, {'_id':0}).to_list(1000)
+    (users,quizzes,results,pairs,pending), docs = await asyncio.gather(aggregate(unit,period,user), db.documents.find({'is_deleted': {'$ne':True}}, {'_id':0, 'storage_path':0}).to_list(1000))
     published = [d for d in docs if d['status']=='published']
     graded = [r for r in results if r['status'] != 'reviewing']
     passed = sum(r['status']=='passed' for r in graded)

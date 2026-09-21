@@ -25,8 +25,14 @@ Permintaan sesi ini (repo https://github.com/gevinjanitto/cms-bpd):
 - auth.py: `bootstrap_password()` membersihkan spasi/newline dan tanda kutip pembungkus dari env; log startup "Auth bootstrap selesai"; endpoint diagnostik `GET /api/auth/status` (code_version, bootstrap_password_length, accounts_synced per akun, rehashed) tanpa membocorkan rahasia.
 - Bersihkan conflict marker di .gitignore, SETUP.md, memory/PRD.md; SETUP.md ditambah langkah cek /api/auth/status.
 
+### Juni 2026 — "Memuat data..." lama di production
+- Pengukuran ke backend Railway: /api/health 0.14s (jaringan OK) tetapi tiap operasi DB ≈0.7–1s dan fetch 100KB results ≈20s → dashboard 40s, monitoring 26s, users 5s. Preview lokal semua <0.2s. Penyebab: koneksi Railway ↔ MongoDB (region berbeda / proxy / tier terbatas), bukan logika aplikasi.
+- Optimasi backend: current_user hanya 2 round-trip awaited (settings di-cache 30s + invalidasi saat PUT /settings; update last_seen fire-and-forget); aggregate() gather users+quizzes paralel, proyeksi tanpa questions/answers/essay_scores; dashboard gather aggregate+documents; Motor client compressors=zlib + pool settings; GZipMiddleware (dashboard 4.5KB→1.1KB).
+- Diagnostik: `GET /api/health?db_check=true` → db_ping_ms, db_fetch_300_results_ms, db_host_suffix.
+
 ## Backlog / Next
-- P0: User "Save to Github" → Railway redeploy backend → buka https://cms-bpd-production.up.railway.app/api/auth/status; pastikan code_version = auth-2026.06-v3, bootstrap_password_length = 9, accounts_synced semua true. Jika panjang ≠ 9, perbaiki Variables BOOTSTRAP_PASSWORD di Railway.
+- P0: User "Save to Github" → Railway redeploy backend → buka /api/health?db_check=true; jika db_ping_ms > 100 → pindahkan cluster MongoDB ke region yang sama dengan service Railway (atau pakai private network jika Mongo di Railway).
+- P0 (selesai jika login production sudah OK): cek /api/auth/status.
 - P1: Pin versi three/@react-three/fiber; `git rm --cached backend/.env frontend/.env`.
 - P1 (dari KAK): AD/SSO, SIM SDM, mail/OTP, keamanan infrastruktur bank — memerlukan keputusan pemilik sistem.
 - P2: Pisahkan stylesheet/page component panjang; fixture teardown pytest.
