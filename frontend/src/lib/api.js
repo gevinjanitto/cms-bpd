@@ -8,9 +8,9 @@ api.interceptors.request.use(config => {
   return config;
 });
 api.interceptors.response.use(r => r, e => {
-  if (e.response?.status === 401) window.dispatchEvent(new Event('session-expired'));
+  if (e.response?.status === 401 && e.config?.url !== '/auth/login') window.dispatchEvent(new Event('session-expired'));
   const detail = e.response?.data?.detail;
-  toast.error(typeof detail === 'string' ? detail : 'Data belum dapat diproses. Periksa isian dan coba kembali.');
+  if (!e.config?.silentError) toast.error(typeof detail === 'string' ? detail : 'Data belum dapat diproses. Periksa isian dan coba kembali.');
   return Promise.reject(e);
 });
 export const download = async (path, name) => {

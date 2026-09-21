@@ -9,8 +9,6 @@ from core import db, now, uid, current_user, require, audit, notify, get_doc, Re
 from storage import put_object, get_object
 
 router = APIRouter()
-class DemoLogin(BaseModel):
-    role: Literal['administrator', 'supervisor', 'employee', 'director']
 class DocumentInput(BaseModel):
     title: str = Field(min_length=3, max_length=200)
     number: str = Field(min_length=3, max_length=100)
@@ -35,16 +33,6 @@ class UserInput(BaseModel):
 
 @router.get('/health')
 async def health(): return {'status': 'ok'}
-
-@router.post('/auth/demo')
-async def demo_login(body: DemoLogin, request: Request):
-    if os.environ.get('DEMO_MODE') != 'true': raise HTTPException(403, 'Mode demo tidak aktif.')
-    user = await db.users.find_one({'id': 'demo-' + ('admin' if body.role == 'administrator' else body.role), 'active': True}, {'_id': 0})
-    if not user: raise HTTPException(403, 'Akun demo tidak aktif.')
-    token = secrets.token_urlsafe(48)
-    await db.sessions.insert_one({'id': uid(), 'token_hash': hashlib.sha256(token.encode()).hexdigest(), 'user_id': user['id'], 'last_seen': now()})
-    await audit(user, 'LOGIN_DEMO', 'Akses', 'Masuk ke ruang demo sebagai ' + body.role, request)
-    return {'token': token, 'user': user, 'demo': True}
 
 @router.get('/auth/me', response_model=Record)
 async def me(user=Depends(current_user)): return user

@@ -21,6 +21,9 @@ async def current_user(authorization: str = Header(default='')):
     session = await db.sessions.find_one({'token_hash': hashlib.sha256(token.encode()).hexdigest()}, {'_id': 0})
     if not session:
         raise HTTPException(401, 'Sesi berakhir. Silakan masuk kembali.')
+    if session.get('auth_version') != 2 or session.get('expires_at', datetime.now(timezone.utc)).replace(tzinfo=timezone.utc) <= datetime.now(timezone.utc):
+        await db.sessions.delete_one({'id': session['id']})
+        raise HTTPException(401, 'Sesi berakhir. Silakan login kembali.')
     settings = await db.settings.find_one({'id': 'main'}, {'_id': 0})
     elapsed = (datetime.now(timezone.utc) - datetime.fromisoformat(session['last_seen'])).total_seconds()
     if elapsed > settings['idle_timeout']:

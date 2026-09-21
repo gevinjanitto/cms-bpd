@@ -1,4 +1,5 @@
 from datetime import datetime, timezone, timedelta
+import os
 from core import db, now, uid
 
 UNITS = ['Divisi Kepatuhan', 'Divisi Operasional', 'Divisi Teknologi Informasi', 'KC Denpasar', 'KC Singaraja', 'KC Gianyar']
@@ -6,6 +7,10 @@ NAMES = ['Ni Putu Ayu Pratiwi', 'I Made Surya Pratama', 'Ni Kadek Dwi Lestari', 
 async def seed_data():
     if await db.settings.find_one({'id': 'main'}): return
     await db.settings.insert_one({'id': 'main', 'passing_grade': 75, 'idle_timeout': 180, 'quiz_duration': 30, 'organization': 'Bank BPD Bali'})
+    if os.environ.get('SEED_SAMPLE_DATA') != 'true':
+        accounts = [('demo-admin', 'Administrator SISDUR', 'administrator', 'Administrator I'), ('demo-supervisor', 'Supervisor SISDUR', 'supervisor', 'Kepala Bagian SISDUR'), ('demo-director', 'Direksi Bank BPD Bali', 'director', 'Direksi'), ('demo-employee', 'Karyawan Bank BPD Bali', 'employee', 'Officer')]
+        await db.users.insert_many([{'id': id, 'name': name, 'role': role, 'position': position, 'unit': UNITS[0], 'nrk': f'CMS-{i+1:03}', 'email': f'{role}@contoh.invalid', 'active': True, 'created_at': now()} for i, (id, name, role, position) in enumerate(accounts)])
+        return
     leaders = [('demo-admin', 'I Made Aditya', 'administrator', 'Administrator I'), ('demo-supervisor', 'Ni Putu Maharani', 'supervisor', 'Kepala Bagian SISDUR'), ('demo-director', 'I Wayan Dharma', 'director', 'Direksi')]
     users = [{'id': i, 'name': n, 'role': r, 'position': p, 'unit': UNITS[0], 'nrk': f'BD{j+1000}', 'email': f'{r}@contoh.invalid', 'active': True, 'created_at': now()} for j, (i,n,r,p) in enumerate(leaders)]
     for k, unit in enumerate(UNITS):

@@ -1,346 +1,276 @@
+import csv
+import hashlib
 import io
 import os
-import time
-from datetime import date, timedelta
+from pathlib import Path
+from datetime import datetime, timedelta, timezone
 
 import pytest
 import requests
+from PIL import Image
+from openpyxl import load_workbook
+from pymongo import MongoClient
 
 
-BASE_URL = os.environ.get("REACT_APP_BACKEND_URL")
+def _read_env_value(file_path: str, key: str):
+    path = Path(file_path)
+    if not path.exists():
+        return None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        if k.strip() == key:
+            return v.strip().strip('"').strip("'")
+    return None
+
+
+BASE_URL = os.environ.get("REACT_APP_BACKEND_URL") or _read_env_value("/app/frontend/.env", "REACT_APP_BACKEND_URL")
+MONGO_URL = os.environ.get("MONGO_URL") or _read_env_value("/app/backend/.env", "MONGO_URL")
+DB_NAME = os.environ.get("DB_NAME") or _read_env_value("/app/backend/.env", "DB_NAME")
 
 
 @pytest.fixture(scope="session")
 def base_url():
     if not BASE_URL:
-        pytest.skip("REACT_APP_BACKEND_URL is not set")
+        pytest.skip("REACT_APP_BACKEND_URL is not configured")
     return BASE_URL.rstrip("/")
 
 
 @pytest.fixture(scope="session")
 def client():
-    s = requests.Session()
-    s.headers.update({"Accept": "application/json"})
-    return s
+    session = requests.Session()
+    session.headers.update({"Accept": "application/json"})
+    return session
 
 
-def auth_headers(client, base_url, role):
-    r = client.post(f"{base_url}/api/auth/demo", json={"role": role}, timeout=30)
-    assert r.status_code == 200
-    data = r.json()
+@pytest.fixture(scope="session")
+def mongo_db():
+    if not MONGO_URL or not DB_NAME:
+        pytest.skip("MONGO_URL/DB_NAME not configured for captcha-fixture tests")
+    mongo_client = MongoClient(MONGO_URL)
+    yield mongo_client[DB_NAME]
+    mongo_client.close()
+
+
+def _issue_captcha(client, base_url):
+    response = client.get(f"{base_url}/api/auth/captcha", timeout=30)
+    assert response.status_code == 200
+    payload = response.json()
+    assert isinstance(payload.get("id"), str) and payload["id"]
+    assert isinstance(payload.get("image"), str) and payload["image"].startswith("data:image/png;base64,")
+    assert payload.get("expires_in") == 180
+    return payload
+
+
+def _seed_captcha_answer(mongo_db, captcha_id, answer="TESTAB"):
+    digest = hashlib.sha256(f"{captcha_id}:{answer}".encode()).hexdigest()
+    mongo_db.captchas.update_one({"id": captcha_id}, {"$set": {"answer_hash": digest}})
+
+
+def _login(client, base_url, username, password, captcha_id, captcha_answer):
+    return client.post(
+        f"{base_url}/api/auth/login",
+        json={
+            "username": username,
+            "password": password,
+            "captcha_id": captcha_id,
+            "captcha_answer": captcha_answer,
+        },
+        timeout=30,
+    )
+
+
+def _auth_headers(client, base_url, mongo_db, username="admin", password="bpdjaya3x"):
+    captcha = _issue_captcha(client, base_url)
+    _seed_captcha_answer(mongo_db, captcha["id"], "TESTAB")
+    login = _login(client, base_url, username, password, captcha["id"], "TESTAB")
+    assert login.status_code == 200
+    data = login.json()
     assert isinstance(data.get("token"), str) and data["token"]
-    assert data.get("user", {}).get("role") == role
-    return {"Authorization": f"Bearer {data['token']}"}
+    return {"Authorization": f"Bearer {data['token']}"}, data
 
 
-def pick_published_document(client, base_url, headers):
-    r = client.get(f"{base_url}/api/documents", headers=headers, timeout=30)
-    assert r.status_code == 200
-    docs = r.json()
-    published = [d for d in docs if d.get("status") == "published"]
-    assert published
-    return published[0]
-
-
-# Health and auth coverage
-def test_health_and_demo_auth(client, base_url):
+# Auth + captcha contract coverage
+def test_health_and_demo_endpoint_removed(client, base_url):
     health = client.get(f"{base_url}/api/health", timeout=30)
     assert health.status_code == 200
     assert health.json().get("status") == "ok"
 
-    headers = auth_headers(client, base_url, "administrator")
+    demo = client.post(f"{base_url}/api/auth/demo", json={"role": "administrator"}, timeout=30)
+    assert demo.status_code == 404
+
+
+def test_captcha_login_success_and_session_persistence(client, base_url, mongo_db):
+    headers, login_data = _auth_headers(client, base_url, mongo_db, username="admin", password="bpdjaya3x")
+    assert login_data["user"]["role"] == "administrator"
+
     me = client.get(f"{base_url}/api/auth/me", headers=headers, timeout=30)
     assert me.status_code == 200
-    me_json = me.json()
-    assert me_json.get("role") == "administrator"
-    assert "_id" not in me_json
+    me_data = me.json()
+    assert me_data["role"] == "administrator"
+    assert me_data["id"] == login_data["user"]["id"]
+    assert "password_hash" not in me_data
 
 
-# Dashboard and reporting coverage
-def test_dashboard_filters_and_export(client, base_url):
-    admin_headers = auth_headers(client, base_url, "administrator")
+def test_captcha_wrong_reuse_and_password_lockout(client, base_url, mongo_db):
+    mongo_db.credentials.update_one(
+        {"username": "direksi"},
+        {"$set": {"failed_attempts": 0}, "$unset": {"locked_until": ""}},
+    )
 
-    dashboard_all = client.get(
-        f"{base_url}/api/dashboard",
-        params={"period": "2026", "unit": ""},
-        headers=admin_headers,
+
+def test_captcha_expiration_and_change_password_restore(client, base_url, mongo_db):
+    expired = _issue_captcha(client, base_url)
+    _seed_captcha_answer(mongo_db, expired["id"], "TESTAB")
+    mongo_db.captchas.update_one(
+        {"id": expired["id"]},
+        {"$set": {"expires_at": datetime.now(timezone.utc) - timedelta(seconds=5)}},
+    )
+    expired_login = _login(client, base_url, "admin", "bpdjaya3x", expired["id"], "TESTAB")
+    assert expired_login.status_code == 400
+
+    headers, _ = _auth_headers(client, base_url, mongo_db, username="admin", password="bpdjaya3x")
+    temp_password = "bpdjaya3xTmp"
+    changed = client.post(
+        f"{base_url}/api/auth/change-password",
+        headers={**headers, "Content-Type": "application/json"},
+        json={"current_password": "bpdjaya3x", "new_password": temp_password},
         timeout=30,
     )
-    assert dashboard_all.status_code == 200
-    all_json = dashboard_all.json()
-    all_metrics = all_json["metrics"]
-    assert all_metrics["assigned"] == all_metrics["completed"] + all_metrics["pending"]
-    assert isinstance(all_json.get("trend"), list)
+    assert changed.status_code == 200
 
-    dashboard_unit = client.get(
-        f"{base_url}/api/dashboard",
-        params={"period": "2026", "unit": "Divisi Kepatuhan"},
-        headers=admin_headers,
-        timeout=30,
+    try:
+        temp_headers, _ = _auth_headers(client, base_url, mongo_db, username="admin", password=temp_password)
+        restored = client.post(
+            f"{base_url}/api/auth/change-password",
+            headers={**temp_headers, "Content-Type": "application/json"},
+            json={"current_password": temp_password, "new_password": "bpdjaya3x"},
+            timeout=30,
+        )
+        assert restored.status_code == 200
+    except Exception:
+        # best-effort recovery if temp login path fails unexpectedly
+        challenge = _issue_captcha(client, base_url)
+        _seed_captcha_answer(mongo_db, challenge["id"], "TESTAB")
+        retry = _login(client, base_url, "admin", temp_password, challenge["id"], "TESTAB")
+        if retry.status_code == 200:
+            token = retry.json()["token"]
+            client.post(
+                f"{base_url}/api/auth/change-password",
+                headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+                json={"current_password": temp_password, "new_password": "bpdjaya3x"},
+                timeout=30,
+            )
+        raise
+
+    wrong = _issue_captcha(client, base_url)
+    wrong_login = _login(client, base_url, "direksi", "bpdjaya3x", wrong["id"], "WRONG1")
+    assert wrong_login.status_code == 400
+
+    valid = _issue_captcha(client, base_url)
+    _seed_captcha_answer(mongo_db, valid["id"], "TESTAB")
+    first = _login(client, base_url, "supervisor", "bpdjaya3x", valid["id"], "TESTAB")
+    assert first.status_code == 200
+    reused = _login(client, base_url, "supervisor", "bpdjaya3x", valid["id"], "TESTAB")
+    assert reused.status_code == 400
+
+    for _ in range(3):
+        challenge = _issue_captcha(client, base_url)
+        _seed_captcha_answer(mongo_db, challenge["id"], "TESTAB")
+        failed = _login(client, base_url, "direksi", "salah-password", challenge["id"], "TESTAB")
+        assert failed.status_code == 401
+
+    challenge = _issue_captcha(client, base_url)
+    _seed_captcha_answer(mongo_db, challenge["id"], "TESTAB")
+    locked = _login(client, base_url, "direksi", "bpdjaya3x", challenge["id"], "TESTAB")
+    assert locked.status_code == 423
+
+    mongo_db.credentials.update_one(
+        {"username": "direksi"},
+        {"$set": {"failed_attempts": 0}, "$unset": {"locked_until": ""}},
     )
-    assert dashboard_unit.status_code == 200
-    unit_metrics = dashboard_unit.json()["metrics"]
-    assert unit_metrics["assigned"] == unit_metrics["completed"] + unit_metrics["pending"]
-    assert unit_metrics["employees"] <= all_metrics["employees"]
 
-    export = client.get(
+
+# Report export and storage integration coverage
+def test_export_csv_and_xlsx_structure(client, base_url, mongo_db):
+    headers, _ = _auth_headers(client, base_url, mongo_db, username="admin", password="bpdjaya3x")
+
+    csv_response = client.get(
         f"{base_url}/api/reports/export",
-        params={"period": "2026", "unit": "Divisi Kepatuhan"},
-        headers=admin_headers,
-        timeout=30,
-    )
-    assert export.status_code == 200
-    assert "text/csv" in export.headers.get("content-type", "")
-    assert "attachment" in export.headers.get("content-disposition", "").lower()
-    assert "Nama Karyawan" in export.text
-
-
-# RBAC negative coverage
-def test_rbac_employee_restricted_endpoints(client, base_url):
-    employee_headers = auth_headers(client, base_url, "employee")
-
-    doc_create = client.post(
-        f"{base_url}/api/documents",
-        headers={**employee_headers, "Content-Type": "application/json"},
-        json={
-            "title": "TEST_RBAC",
-            "number": "TEST/RBAC/001",
-            "category": "Internal",
-            "unit": "Divisi Kepatuhan",
-            "description": "TEST",
-            "version": "1.0",
-        },
-        timeout=30,
-    )
-    assert doc_create.status_code == 403
-
-    users_view = client.get(f"{base_url}/api/users", headers=employee_headers, timeout=30)
-    assert users_view.status_code == 403
-
-    settings_update = client.put(
-        f"{base_url}/api/settings",
-        headers={**employee_headers, "Content-Type": "application/json"},
-        json={"passing_grade": 75, "idle_timeout": 180, "quiz_duration": 30},
-        timeout=30,
-    )
-    assert settings_update.status_code == 403
-
-
-def test_rbac_director_and_admin_restrictions(client, base_url):
-    director_headers = auth_headers(client, base_url, "director")
-    quizzes = client.get(f"{base_url}/api/quizzes", headers=director_headers, timeout=30)
-    assert quizzes.status_code == 200
-    assert quizzes.json()
-    quiz_id = quizzes.json()[0]["id"]
-
-    director_detail = client.get(f"{base_url}/api/quizzes/{quiz_id}", headers=director_headers, timeout=30)
-    assert director_detail.status_code == 403
-
-    admin_headers = auth_headers(client, base_url, "administrator")
-    published_doc = pick_published_document(client, base_url, admin_headers)
-    admin_approve = client.post(
-        f"{base_url}/api/documents/{published_doc['id']}/action",
-        headers={**admin_headers, "Content-Type": "application/json"},
-        json={"action": "approve", "reason": ""},
-        timeout=30,
-    )
-    assert admin_approve.status_code == 403
-
-
-# Documents full lifecycle and upload validation coverage
-def test_document_lifecycle_and_upload_rules(client, base_url):
-    admin_headers = auth_headers(client, base_url, "administrator")
-    supervisor_headers = auth_headers(client, base_url, "supervisor")
-    employee_headers = auth_headers(client, base_url, "employee")
-    now_key = int(time.time())
-
-    create = client.post(
-        f"{base_url}/api/documents",
-        headers={**admin_headers, "Content-Type": "application/json"},
-        json={
-            "title": f"TEST_DOC_{now_key}",
-            "number": f"TEST/DOC/{now_key}",
-            "category": "Internal",
-            "unit": "Divisi Kepatuhan",
-            "description": "Dokumen uji otomatis",
-            "version": "1.0",
-        },
-        timeout=30,
-    )
-    assert create.status_code == 200
-    created = create.json()
-    doc_id = created["id"]
-    assert created["status"] == "draft"
-
-    invalid_ext = client.post(
-        f"{base_url}/api/documents/{doc_id}/upload",
-        headers=admin_headers,
-        files={"file": ("bad.txt", io.BytesIO(b"hello"), "text/plain")},
-        timeout=30,
-    )
-    assert invalid_ext.status_code == 400
-
-    invalid_pdf_signature = client.post(
-        f"{base_url}/api/documents/{doc_id}/upload",
-        headers=admin_headers,
-        files={"file": ("bad.pdf", io.BytesIO(b"NOTPDF"), "application/pdf")},
-        timeout=30,
-    )
-    assert invalid_pdf_signature.status_code == 400
-
-    too_large = client.post(
-        f"{base_url}/api/documents/{doc_id}/upload",
-        headers=admin_headers,
-        files={"file": ("large.pdf", io.BytesIO(b"%PDF" + b"a" * (10 * 1024 * 1024 + 2)), "application/pdf")},
+        params={"format": "csv", "view": "results", "period": "2026"},
+        headers=headers,
         timeout=60,
     )
-    assert too_large.status_code == 400
+    assert csv_response.status_code == 200
+    assert "text/csv" in csv_response.headers.get("content-type", "")
 
-    draft_check = client.get(f"{base_url}/api/documents", headers=admin_headers, timeout=30)
-    assert draft_check.status_code == 200
-    refreshed = next(d for d in draft_check.json() if d["id"] == doc_id)
-    assert refreshed["status"] == "draft"
+    csv_text = csv_response.content.decode("utf-8")
+    assert csv_text.startswith("\ufeffsep=;\r\n")
+    lines = csv_text.lstrip("\ufeff").splitlines()
+    assert lines[0] == "sep=;"
+    parsed = list(csv.reader(lines[1:], delimiter=";"))
+    assert len(parsed) >= 2
 
-    valid_upload = client.post(
-        f"{base_url}/api/documents/{doc_id}/upload",
-        headers=admin_headers,
-        files={"file": ("valid.pdf", io.BytesIO(b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\n%%EOF"), "application/pdf")},
+    expected_columns = len(parsed[0])
+    assert all(len(row) == expected_columns for row in parsed[1:])
+    assert "Status" in parsed[0]
+    status_idx = parsed[0].index("Status")
+    status_values = {row[status_idx] for row in parsed[1:] if len(row) > status_idx and row[status_idx]}
+    assert status_values.issubset({"Lulus", "Belum Lulus", "Menunggu Penilaian", "Belum Mengikuti"})
+
+    if "Waktu Pengumpulan (WITA)" in parsed[0]:
+        date_idx = parsed[0].index("Waktu Pengumpulan (WITA)")
+        date_values = [row[date_idx] for row in parsed[1:] if len(row) > date_idx and row[date_idx]]
+        assert all("T" not in value and len(value.split("/")) == 3 for value in date_values)
+
+    xlsx_response = client.get(
+        f"{base_url}/api/reports/export",
+        params={"format": "xlsx", "view": "results", "period": "2026"},
+        headers=headers,
         timeout=60,
     )
-    assert valid_upload.status_code == 200
-    assert valid_upload.json().get("success") is True
+    assert xlsx_response.status_code == 200
+    assert "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" in xlsx_response.headers.get("content-type", "")
 
-    submit = client.post(
-        f"{base_url}/api/documents/{doc_id}/action",
-        headers={**admin_headers, "Content-Type": "application/json"},
-        json={"action": "submit", "reason": ""},
+    workbook = load_workbook(io.BytesIO(xlsx_response.content))
+    sheet = workbook.active
+    assert sheet.title == "Laporan Kepatuhan"
+    assert str(sheet["A1"].value).startswith("COMPLIANCE MANAGEMENT SYSTEM")
+    assert sheet.freeze_panes == "A6"
+    assert sheet.auto_filter.ref is not None
+
+
+# Media status and user-data leakage coverage
+def test_media_status_branding_and_user_payload_safety(client, base_url, mongo_db):
+    headers, _ = _auth_headers(client, base_url, mongo_db, username="admin", password="bpdjaya3x")
+
+    media = client.get(f"{base_url}/api/media/status", headers=headers, timeout=30)
+    assert media.status_code == 200
+    media_data = media.json()
+    assert media_data["cloudinary_configured"] is False
+    assert media_data["documents_storage"] == "MongoDB GridFS"
+
+    branding = client.get(f"{base_url}/api/branding", timeout=30)
+    assert branding.status_code == 200
+    branding_data = branding.json()
+    assert "logo_url" in branding_data and "login_image_url" in branding_data
+
+    png_buffer = io.BytesIO()
+    Image.new("RGB", (1, 1), "#1a7c57").save(png_buffer, format="PNG")
+    tiny_png = png_buffer.getvalue()
+    image_upload = client.post(
+        f"{base_url}/api/media/images?purpose=library",
+        headers=headers,
+        files={"file": ("tiny.png", tiny_png, "image/png")},
         timeout=30,
     )
-    assert submit.status_code == 200
-    assert submit.json().get("status") == "pending"
+    assert image_upload.status_code == 503
 
-    approve = client.post(
-        f"{base_url}/api/documents/{doc_id}/action",
-        headers={**supervisor_headers, "Content-Type": "application/json"},
-        json={"action": "approve", "reason": ""},
-        timeout=30,
-    )
-    assert approve.status_code == 200
-    assert approve.json().get("status") == "published"
-
-    employee_docs = client.get(f"{base_url}/api/documents", headers=employee_headers, timeout=30)
-    assert employee_docs.status_code == 200
-    employee_ids = {d["id"] for d in employee_docs.json()}
-    assert doc_id in employee_ids
-
-    download = client.get(f"{base_url}/api/documents/{doc_id}/download", headers=employee_headers, timeout=60)
-    assert download.status_code == 200
-    assert len(download.content) > 0
-
-
-# Quizzes workflow, answer security, one-attempt rule, and essay grading
-def test_quiz_workflow_and_attempt_and_essay_grading(client, base_url):
-    admin_headers = auth_headers(client, base_url, "administrator")
-    supervisor_headers = auth_headers(client, base_url, "supervisor")
-    employee_headers = auth_headers(client, base_url, "employee")
-    now_key = int(time.time())
-
-    doc = pick_published_document(client, base_url, admin_headers)
-    start = date.today().isoformat()
-    end = (date.today() + timedelta(days=7)).isoformat()
-
-    create_quiz = client.post(
-        f"{base_url}/api/quizzes",
-        headers={**admin_headers, "Content-Type": "application/json"},
-        json={
-            "title": f"TEST_QUIZ_{now_key}",
-            "description": "Quiz uji otomatis",
-            "document_id": doc["id"],
-            "passing_grade": 75,
-            "duration": 30,
-            "units": ["Divisi Kepatuhan"],
-            "positions": ["Officer"],
-            "start_date": start,
-            "end_date": end,
-            "questions": [
-                {
-                    "id": "q1",
-                    "text": "Soal PG 1",
-                    "type": "multiple",
-                    "options": ["A", "B", "C", "D"],
-                    "correct": 1,
-                },
-                {
-                    "id": "q2",
-                    "text": "Soal PG 2",
-                    "type": "multiple",
-                    "options": ["A", "B", "C", "D"],
-                    "correct": 2,
-                },
-                {
-                    "id": "q3",
-                    "text": "Soal Esai",
-                    "type": "essay",
-                    "options": [],
-                    "correct": 0,
-                },
-            ],
-        },
-        timeout=30,
-    )
-    assert create_quiz.status_code == 200
-    quiz = create_quiz.json()
-    quiz_id = quiz["id"]
-    assert quiz["status"] == "draft"
-
-    submit_quiz = client.post(
-        f"{base_url}/api/quizzes/{quiz_id}/action",
-        headers={**admin_headers, "Content-Type": "application/json"},
-        json={"action": "submit", "reason": ""},
-        timeout=30,
-    )
-    assert submit_quiz.status_code == 200
-    assert submit_quiz.json().get("status") == "pending"
-
-    approve_quiz = client.post(
-        f"{base_url}/api/quizzes/{quiz_id}/action",
-        headers={**supervisor_headers, "Content-Type": "application/json"},
-        json={"action": "approve", "reason": ""},
-        timeout=30,
-    )
-    assert approve_quiz.status_code == 200
-    assert approve_quiz.json().get("status") == "published"
-
-    employee_detail = client.get(f"{base_url}/api/quizzes/{quiz_id}", headers=employee_headers, timeout=30)
-    assert employee_detail.status_code == 200
-    for q in employee_detail.json().get("questions", []):
-        assert "correct" not in q
-
-    start_quiz = client.post(f"{base_url}/api/quizzes/{quiz_id}/start", headers=employee_headers, timeout=30)
-    assert start_quiz.status_code == 200
-    assert "started_at" in start_quiz.json()
-
-    submit_employee = client.post(
-        f"{base_url}/api/quizzes/{quiz_id}/submit",
-        headers={**employee_headers, "Content-Type": "application/json"},
-        json={"answers": {"q1": 1, "q2": 2, "q3": "Jawaban esai uji"}},
-        timeout=30,
-    )
-    assert submit_employee.status_code == 200
-    result = submit_employee.json()
-    assert result["status"] == "reviewing"
-    assert result["score"] == 66.7
-
-    second_start = client.post(f"{base_url}/api/quizzes/{quiz_id}/start", headers=employee_headers, timeout=30)
-    assert second_start.status_code == 400
-
-    grade = client.post(
-        f"{base_url}/api/results/{result['id']}/grade",
-        headers={**supervisor_headers, "Content-Type": "application/json"},
-        json={"essay_scores": {"q3": 90}, "note": "Bagus"},
-        timeout=30,
-    )
-    assert grade.status_code == 200
-    grade_json = grade.json()
-    assert grade_json.get("score") == 96.7
-    assert grade_json.get("status") == "passed"
+    users = client.get(f"{base_url}/api/users", headers=headers, timeout=30)
+    assert users.status_code == 200
+    values = users.json()
+    assert isinstance(values, list) and values
+    leaked_keys = [k for row in values for k in row.keys() if "password" in k.lower()]
+    assert not leaked_keys

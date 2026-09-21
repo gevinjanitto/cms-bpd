@@ -5,6 +5,8 @@ from fastapi.responses import Response
 from core import db, uid, current_user, require, audit, notify, eligible
 from quiz_routes import state
 from pydantic import BaseModel
+from typing import Literal
+from exporting import report_data, csv_bytes, xlsx_bytes
 
 router = APIRouter()
 def in_period(value, period):
@@ -88,15 +90,16 @@ async def remind(body: ReminderInput, request: Request, user=Depends(current_use
     return {'count':len(ids)}
 
 @router.get('/reports/export')
-async def export(unit: str='', period: str='', request: Request=None, user=Depends(current_user)):
+async def export(unit: str='', period: str='', quiz_id: str='', q: str='', view: Literal['all','units','results','pending','essay','top','bottom','never']='all', format: Literal['csv','xlsx']='csv', request: Request=None, user=Depends(current_user)):
     require(user,'administrator','supervisor','director')
-    *_, results,pairs,pending = await aggregate(unit,period)
-    out=io.StringIO(); writer=csv.writer(out)
-    writer.writerow(['Nama Karyawan','Unit Kerja','Kuis','Nilai','Passing Grade','Status','Waktu Pengumpulan'])
-    def safe(value):
-        text=str(value)
-        return "'"+text if text.startswith(('=','+','-','@','\t','\r')) else text
-    for r in results: writer.writerow([safe(r['user_name']),safe(r['unit']),safe(r['quiz_title']),r['score'],r['passing_grade'],r['status'],r['submitted_at']])
-    for p in pending: writer.writerow([safe(p['user_name']),safe(p['unit']),safe(p['quiz_title']),'','','Belum mengikuti',''])
-    await audit(user,'EXPORT','Laporan','Mengunduh laporan kepatuhan CSV',request)
-    return Response('\ufeff'+out.getvalue(),media_type='text/csv; charset=utf-8',headers={'Content-Disposition':'attachment; filename="laporan-kepatuhan.csv"'})
+    users,quizzes,results,pairs,pending = await aggregate(unit,period)
+    if quiz_id:
+        quizzes = [quiz for quiz in quizzes if quiz['id'] == quiz_id]
+        results = [r for r in results if r['quiz_id'] == quiz_id]
+        pending = [r for r in pending if r['quiz_id'] == quiz_id]
+        pairs = {pair for pair in pairs if pair[0] == quiz_id}
+    headers, rows = report_data(users,quizzes,results,pairs,pending,view,q)
+    content = xlsx_bytes(headers,rows,period,unit) if format == 'xlsx' else csv_bytes(headers,rows)
+    media = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' if format == 'xlsx' else 'text/csv; charset=utf-8'
+    await audit(user,'EXPORT','Laporan',f'Mengunduh laporan {format.upper()} · {len(rows)} baris · {view}',request)
+    return Response(content,media_type=media,headers={'Content-Disposition':f'attachment; filename="laporan-kepatuhan.{format}"'})
