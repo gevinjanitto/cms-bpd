@@ -3,7 +3,11 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Files, ClipboardList, ChartNoAxesCombined, Users, ShieldCheck, Settings2, Bell, Search, ChevronDown, X, Sun, Moon, LogOut, Menu, KeyRound } from 'lucide-react';
 import { toast } from 'sonner';
 import { api, roleNames } from '../lib/api';
+<<<<<<< HEAD
 import { APP_NAME, BANK_NAME, useBranding, DeveloperCredit } from '../lib/branding';
+=======
+import { APP_NAME, BANK_NAME, useBranding } from '../lib/branding';
+>>>>>>> 91ae9f0a5bad37493205b97706d3dde110afcab8
 import { IconBtn, Btn, Empty, Modal, Field } from './common';
 
 const menus = [
@@ -48,7 +52,11 @@ export const Layout = ({ user, onLogout, children }) => {
       <IconBtn data-testid="theme-toggle-button" label={dark ? 'Mode terang' : 'Mode gelap'} onClick={() => setDark(!dark)}>{dark ? <Sun size={18} /> : <Moon size={18} />}</IconBtn>
       <div className="notice-wrapper"><IconBtn data-testid="notification-toggle" label="Notifikasi" onClick={() => setShowNotices(!showNotices)}><Bell size={19} />{notices.some(n => !n.read_by.includes(user.id)) && <span className="notification-dot" />}</IconBtn>{showNotices && <div className="notification-panel" data-testid="notification-panel"><div className="section-head"><h2>Notifikasi</h2><IconBtn label="Tutup notifikasi" data-testid="notification-close" onClick={() => setShowNotices(false)}><X size={16} /></IconBtn></div>{notices.length ? notices.map(n => <button data-testid={`notification-${n.id}`} key={n.id} onClick={() => read(n)} className={`notification-item ${n.read_by.includes(user.id) ? 'read' : ''}`}><span className="notice-icon"><Bell size={17} /></span><div><strong>{n.title}</strong><p>{n.detail}</p></div></button>) : <Empty text="Tidak ada notifikasi baru." />}</div>}</div>
       <span className="topbar-divider" /><div className="user-identity"><span className="avatar">{user.name.split(' ').slice(0, 2).map(x => x[0]).join('')}</span><div><strong data-testid="current-user-name">{user.name}</strong><small data-testid="current-user-role">{roleNames[user.role]}</small></div></div><IconBtn label="Ubah password" data-testid="change-password-open" onClick={() => setPasswordModal(true)}><KeyRound size={17} /></IconBtn><IconBtn label="Keluar" data-testid="logout-button" onClick={onLogout}><LogOut size={17} /></IconBtn>
+<<<<<<< HEAD
     </div></header><main className="main-content" key={location.pathname}>{children}</main><footer className="page-footer"><span>© {new Date().getFullYear()} {BANK_NAME}. Seluruh hak dilindungi.</span><DeveloperCredit id="app" /><span><span className="live-dot" />{APP_NAME} · Data contoh</span></footer></div>
+=======
+    </div></header><main className="main-content" key={location.pathname}>{children}</main><footer className="page-footer"><span>© {new Date().getFullYear()} {BANK_NAME}. Seluruh hak dilindungi.</span><span><span className="live-dot" />{APP_NAME} · Data contoh</span></footer></div>
+>>>>>>> 91ae9f0a5bad37493205b97706d3dde110afcab8
     <Modal title="Ubah Password" open={passwordModal} onClose={() => setPasswordModal(false)}><form onSubmit={savePassword}><div className="form-grid"><Field label="Password saat ini" className="field-full"><input data-testid="password-current" type="password" autoComplete="current-password" required value={passwords.current_password} onChange={e => setPasswords({ ...passwords, current_password: e.target.value })} /></Field><Field label="Password baru (minimal 8 karakter)" className="field-full"><input data-testid="password-new" type="password" autoComplete="new-password" minLength={8} maxLength={72} required value={passwords.new_password} onChange={e => setPasswords({ ...passwords, new_password: e.target.value })} /></Field></div><div className="form-actions"><Btn secondary type="button" data-testid="password-cancel" onClick={() => setPasswordModal(false)}>Batal</Btn><Btn type="submit" disabled={busy} data-testid="password-save">Simpan Password</Btn></div></form></Modal>
   </div>;
 };

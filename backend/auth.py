@@ -30,6 +30,7 @@ async def initialize_auth():
     if not version or version.get('version') != 2:
         await db.sessions.delete_many({})
         await db.system_meta.update_one({'id': 'auth'}, {'$set': {'id': 'auth', 'version': 2}}, upsert=True)
+<<<<<<< HEAD
     password = os.environ.get('BOOTSTRAP_PASSWORD')
     if not password or len(password) < 8:
         raise RuntimeError('BOOTSTRAP_PASSWORD minimal 8 karakter wajib diatur untuk inisialisasi akun.')
@@ -41,6 +42,14 @@ async def initialize_auth():
                 await db.credentials.update_one({'username': username}, {'$set': {'password_hash': digest.decode(), 'failed_attempts': 0, 'updated_at': now()}, '$unset': {'locked_until': ''}})
             await db.users.update_one({'id': user_id}, {'$set': {'username': username}})
             continue
+=======
+    for username, user_id in ACCOUNTS.items():
+        if await db.credentials.find_one({'username': username}):
+            continue
+        password = os.environ.get('BOOTSTRAP_PASSWORD')
+        if not password or len(password) < 8:
+            raise RuntimeError('BOOTSTRAP_PASSWORD minimal 8 karakter wajib diatur untuk inisialisasi akun.')
+>>>>>>> 91ae9f0a5bad37493205b97706d3dde110afcab8
         digest = await run_in_threadpool(bcrypt.hashpw, password.encode(), bcrypt.gensalt())
         await db.credentials.update_one({'username': username}, {'$setOnInsert': {
             'id': uid(), 'username': username, 'user_id': user_id,
