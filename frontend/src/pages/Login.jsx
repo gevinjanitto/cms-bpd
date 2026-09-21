@@ -1,12 +1,8 @@
 import React, { lazy, Suspense, useCallback, useEffect, useState } from 'react';
 import { ArrowRight, Box, Eye, EyeOff, Image, LockKeyhole, RefreshCw, ShieldCheck, UserRound, LoaderCircle, Sun, Moon } from 'lucide-react';
 import { api } from '../lib/api';
-<<<<<<< HEAD
-import { APP_NAME, BANK_NAME, useBranding, DeveloperCredit } from '../lib/branding';
-=======
 import { APP_NAME, BANK_NAME, useBranding } from '../lib/branding';
->>>>>>> 91ae9f0a5bad37493205b97706d3dde110afcab8
-import { IconBtn } from '../components/common';
+import { IconBtn, DeveloperCredit } from '../components/common';
 
 const BaliScene = lazy(() => import('../components/scene/BaliScene'));
 
@@ -68,12 +64,7 @@ export default function Login({ onLogin, expired }) {
           <div className="login-captcha"><div className="captcha-label"><span>Verifikasi keamanan</span><span>CAPTCHA</span></div><div className="captcha-row"><div className="captcha-picture">{captchaLoading ? <LoaderCircle size={20} className="spin" /> : captcha && <img data-testid="login-captcha-image" src={captcha.image} alt="Kode CAPTCHA enam karakter" />}</div><button type="button" className="captcha-refresh" data-testid="login-captcha-refresh" onClick={refreshCaptcha} disabled={captchaLoading || busy} title="Muat kode baru" aria-label="Muat kode CAPTCHA baru"><RefreshCw size={18} /></button><input data-testid="login-captcha-answer" aria-label="Jawaban CAPTCHA" required maxLength={6} autoComplete="off" spellCheck={false} value={answer} onChange={e => setAnswer(e.target.value.toUpperCase())} placeholder="Kode di samping" /></div></div>
           {error && <div className="login-error" role="alert" data-testid="login-error">{error}</div>}
           <button className="login-submit" data-testid="login-submit" type="submit" disabled={busy || captchaLoading || !captcha}>{busy ? <><LoaderCircle size={18} className="spin" />Memverifikasi...</> : <>Masuk ke Dashboard<ArrowRight size={18} /></>}</button>
-<<<<<<< HEAD
         </form><div className="login-help"><ShieldCheck size={15} /><p>Akses khusus pengguna yang berwenang.<br /><span>Butuh bantuan? Hubungi administrator SISDUR.</span></p></div></div><footer className="login-panel-footer"><span>© {new Date().getFullYear()} Bank BPD Bali</span><span>Integritas. Kepatuhan. Kepercayaan.</span><DeveloperCredit id="login-panel" /></footer></section>
     </main><footer className="login-page-footer"><span>Terdaftar dan diawasi oleh Otoritas Jasa Keuangan & Bank Indonesia</span><DeveloperCredit id="login-page" /><span>COMPLIANCE MANAGEMENT SYSTEM</span></footer>
-=======
-        </form><div className="login-help"><ShieldCheck size={15} /><p>Akses khusus pengguna yang berwenang.<br /><span>Butuh bantuan? Hubungi administrator SISDUR.</span></p></div></div><footer className="login-panel-footer"><span>© {new Date().getFullYear()} Bank BPD Bali</span><span>Integritas. Kepatuhan. Kepercayaan.</span></footer></section>
-    </main><footer className="login-page-footer"><span>Terdaftar dan diawasi oleh Otoritas Jasa Keuangan & Bank Indonesia</span><span>COMPLIANCE MANAGEMENT SYSTEM</span></footer>
->>>>>>> 91ae9f0a5bad37493205b97706d3dde110afcab8
   </div>;
 }
