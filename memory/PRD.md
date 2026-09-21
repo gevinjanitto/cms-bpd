@@ -91,9 +91,13 @@ Logo yang digunakan sesuai aset pengguna: Bali Dwipa Jaya. UI Bahasa Indonesia, 
 - Tambah fixture teardown otomatis pada pytest agar record uji tidak perlu dibersihkan terpisah.
 
 ## Catatan kelanjutan
+<<<<<<< HEAD
 Gunakan pengujian yang sudah ada. Jangan mengklaim demo authentication sebagai SSO atau notifikasi aplikasi sebagai email. Jangan hapus audit ketika membersihkan data uji. Integrasi bank memerlukan keputusan dan konfigurasi dari pemilik sistem.
 ## Perbaikan deploy Railway (Juni 2026)
 - Root cause: service Railway dibangun dari root repo (tanpa Root Directory); root berisi `yarn.lock` kosong + file log sehingga Railpack gagal mendeteksi aplikasi.
 - Dilakukan: hapus root `yarn.lock`/`three-*.log`; tambah `frontend/Dockerfile` (node:20 build + `serve` SPA, ARG REACT_APP_BACKEND_URL), `frontend/railway.json`, `.dockerignore` (root/frontend), root `Dockerfile`+`railway.json` sebagai fallback backend; `.gitignore` sekarang mengabaikan `.env`; SETUP.md berisi langkah Railway dua service + Atlas.
 - Diverifikasi testing agent (iteration_3): health, captcha, login-reject, halaman login, `yarn build` produksi.
 - Backlog: `git rm --cached backend/.env frontend/.env` di repo user agar rahasia tidak tersimpan; verifikasi deploy nyata di Railway; Atlas IP allowlist.
+=======
+Gunakan pengujian yang sudah ada. Jangan mengklaim demo authentication sebagai SSO atau notifikasi aplikasi sebagai email. Jangan hapus audit ketika membersihkan data uji. Integrasi bank memerlukan keputusan dan konfigurasi dari pemilik sistem.
+>>>>>>> 28f218d13e8bf8ef8c54d93ba94fdf682e6494d0

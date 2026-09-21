@@ -7,6 +7,7 @@
 - Gambar opsional di Cloudinary. Logo, font Manrope, dan ilustrasi awal disertakan lokal; tidak ada runtime request ke penyedia aset sebelumnya.
 - Login username/password + CAPTCHA gambar satu kali pakai yang diverifikasi server. Password bcrypt, token opaque dengan revocation, rate limit, dan lock 5 menit setelah 3 password salah.
 
+<<<<<<< HEAD
 ## Deploy ke Railway (dua service, satu repo)
 Error `Railpack failed to prepare the build` terjadi ketika service dibangun dari root repo tanpa Root Directory. Perbaikan:
 
@@ -18,6 +19,8 @@ Error `Railpack failed to prepare the build` terjadi ketika service dibangun dar
 3. Generate Domain untuk frontend, lalu pastikan domain tersebut sudah ada di `CORS_ORIGINS` backend (redeploy backend jika baru ditambahkan).
 4. MongoDB Atlas: Network Access → allow `0.0.0.0/0` (Railway tidak memiliki IP statis) dan user database dengan hak readWrite.
 
+=======
+>>>>>>> 28f218d13e8bf8ef8c54d93ba94fdf682e6494d0
 ## Backend
 1. Root directory service: `backend`.
 2. Salin `.env.example` menjadi `.env` untuk penggunaan lokal, atau isi variabel rahasia di layanan hosting.
