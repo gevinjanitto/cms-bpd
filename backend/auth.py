@@ -2,6 +2,7 @@
 import base64
 import hashlib
 import io
+import logging
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
@@ -17,7 +18,10 @@ from starlette.concurrency import run_in_threadpool
 from core import audit, current_user, db, now, uid
 
 router = APIRouter()
+logger = logging.getLogger('uvicorn.error')
 ACCOUNTS = {'admin': 'demo-admin', 'supervisor': 'demo-supervisor', 'karyawan': 'demo-employee', 'direksi': 'demo-director'}
+CODE_VERSION = 'auth-2026.06-v3'
+AUTH_STATE = {}
 
 
 async def initialize_auth():
@@ -30,15 +34,17 @@ async def initialize_auth():
     if not version or version.get('version') != 2:
         await db.sessions.delete_many({})
         await db.system_meta.update_one({'id': 'auth'}, {'$set': {'id': 'auth', 'version': 2}}, upsert=True)
-    password = os.environ.get('BOOTSTRAP_PASSWORD')
-    if not password or len(password) < 8:
+    password = bootstrap_password()
+    if len(password) < 8:
         raise RuntimeError('BOOTSTRAP_PASSWORD minimal 8 karakter wajib diatur untuk inisialisasi akun.')
+    rehashed = []
     for username, user_id in ACCOUNTS.items():
         existing = await db.credentials.find_one({'username': username})
         if existing:
             if not await run_in_threadpool(bcrypt.checkpw, password.encode(), existing['password_hash'].encode()):
                 digest = await run_in_threadpool(bcrypt.hashpw, password.encode(), bcrypt.gensalt())
                 await db.credentials.update_one({'username': username}, {'$set': {'password_hash': digest.decode(), 'failed_attempts': 0, 'updated_at': now()}, '$unset': {'locked_until': ''}})
+                rehashed.append(username)
             await db.users.update_one({'id': user_id}, {'$set': {'username': username}})
             continue
         digest = await run_in_threadpool(bcrypt.hashpw, password.encode(), bcrypt.gensalt())
@@ -47,6 +53,26 @@ async def initialize_auth():
             'password_hash': digest.decode(), 'failed_attempts': 0, 'created_at': now()
         }}, upsert=True)
         await db.users.update_one({'id': user_id}, {'$set': {'username': username}})
+        rehashed.append(username)
+    AUTH_STATE.update({'synced_at': now(), 'rehashed': rehashed, 'password_length': len(password)})
+    logger.info('Auth bootstrap selesai: password %d karakter, akun di-hash ulang: %s', len(password), rehashed or 'tidak ada')
+
+
+def bootstrap_password():
+    raw = (os.environ.get('BOOTSTRAP_PASSWORD') or '').strip()
+    if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in '"\'':
+        raw = raw[1:-1]
+    return raw
+
+
+@router.get('/auth/status')
+async def auth_status():
+    password = bootstrap_password()
+    synced = {}
+    for username in ACCOUNTS:
+        row = await db.credentials.find_one({'username': username}, {'_id': 0, 'password_hash': 1, 'locked_until': 1})
+        synced[username] = bool(row) and await run_in_threadpool(bcrypt.checkpw, password.encode(), row['password_hash'].encode())
+    return {'code_version': CODE_VERSION, 'bootstrap_configured': len(password) >= 8, 'bootstrap_password_length': len(password), 'accounts_synced': synced, **AUTH_STATE}
 
 
 async def rate_limit(request, action, maximum):
