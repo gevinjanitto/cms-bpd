@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@layer base {
+ :root { --background: 150 12% 97%; --foreground: 154 15% 14%; --card: 0 0% 100%; --card-foreground:154 15% 14%; --popover:0 0% 100%; --popover-foreground:154 15% 14%; --primary:158 62% 28%; --primary-foreground:0 0% 100%; --secondary:150 12% 95%; --secondary-foreground:154 15% 14%; --muted:150 12% 95%; --muted-foreground:150 5% 46%; --accent:150 20% 94%; --accent-foreground:154 15% 14%; --destructive:0 75% 55%; --destructive-foreground:0 0% 100%; --border:150 10% 89%; --input:150 10% 86%; --ring:158 62% 28%; --radius:0.5rem; }
+ .dark { --background:150 12% 8%; --foreground:150 8% 90%; --card:150 10% 11%; --card-foreground:150 8% 90%; --popover:150 10% 11%; --popover-foreground:150 8% 90%; --muted:150 10% 18%; --muted-foreground:150 8% 63%; --border:150 10% 22%; --input:150 10% 28%; --accent:150 10% 20%; --secondary:150 10% 18%; --secondary-foreground:150 8% 90%; }
+ * { @apply border-border; box-sizing:border-box; letter-spacing:0; }
+ body { @apply bg-background text-foreground; margin:0; font-family:'IBM Plex Sans',sans-serif; -webkit-font-smoothing:antialiased; }
+ button, input, select, textarea { font:inherit; }
+ button, a, input, select, textarea { -webkit-tap-highlight-color:transparent; }
+ button { cursor:pointer; }
+ ::selection { background:#c7eadb; color:#133d2c; }
+}

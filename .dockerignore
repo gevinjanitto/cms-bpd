@@ -1,0 +1,12 @@
+.git
+.emergent
+frontend
+memory
+test_reports
+tests
+**/.env
+**/.env.*
+!**/.env.example
+**/__pycache__
+*.md
+design_guidelines.json
