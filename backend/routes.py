@@ -5,7 +5,8 @@ from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
-from core import db, now, uid, current_user, require, audit, notify, get_doc, Record, invalidate_settings
+from core import db, now, uid, current_user, require, audit, notify, get_doc, Record, invalidate_settings, get_settings
+from contact_settings import ContactSettings
 from storage import put_object, get_object
 
 router = APIRouter()
@@ -19,7 +20,7 @@ class DocumentInput(BaseModel):
 class ActionInput(BaseModel):
     action: Literal['submit', 'approve', 'reject']
     reason: str = ''
-class SettingsInput(BaseModel):
+class SettingsInput(ContactSettings):
     passing_grade: int = Field(ge=1, le=100)
     idle_timeout: int = Field(ge=60, le=3600)
     quiz_duration: int = Field(ge=1, le=180)
@@ -65,7 +66,7 @@ async def create_document(body: DocumentInput, request: Request, user=Depends(cu
     require(user, 'administrator')
     doc = {**body.model_dump(), 'id': uid(), 'status': 'draft', 'created_by': user['id'], 'created_at': now(), 'updated_at': now(), 'filename': None, 'is_deleted': False, 'sample': False}
     await db.documents.insert_one(doc.copy())
-    await audit(user, 'CREATE', 'Ketentuan', 'Membuat ' + doc['title'], request)
+    await audit(user, 'CREATE', 'Regulasi', 'Membuat ' + doc['title'], request)
     return doc
 
 @router.put('/documents/{id}', response_model=Record)
@@ -75,7 +76,7 @@ async def update_document(id: str, body: DocumentInput, request: Request, user=D
     if doc['status'] not in ['draft', 'rejected']: raise HTTPException(400, 'Hanya draf atau dokumen ditolak yang dapat diubah.')
     values = {**body.model_dump(), 'updated_at': now()}
     await db.documents.update_one({'id': id}, {'$set': values})
-    await audit(user, 'UPDATE', 'Ketentuan', body.title, request)
+    await audit(user, 'UPDATE', 'Regulasi', body.title, request)
     return {**doc, **values}
 
 @router.post('/documents/{id}/upload')
@@ -91,7 +92,7 @@ async def upload(id: str, request: Request, file: UploadFile = File(...), user=D
     if (ext == 'pdf' and not data.startswith(b'%PDF')) or (ext == 'docx' and not data.startswith(b'PK')): raise HTTPException(400, 'Isi berkas tidak sesuai format dokumen.')
     result = await run_in_threadpool(put_object, f'cms-bali-dwipa/uploads/{user["id"]}/{uid()}.{ext}', data, types[ext])
     await db.documents.update_one({'id': id}, {'$set': {'storage_path': result['path'], 'filename': file.filename, 'content_type': types[ext], 'file_size': len(data), 'updated_at': now()}})
-    await audit(user, 'UPLOAD', 'Ketentuan', file.filename, request)
+    await audit(user, 'UPLOAD', 'Regulasi', file.filename, request)
     return {'success': True, 'filename': file.filename}
 
 @router.get('/documents/{id}/download')
@@ -102,10 +103,10 @@ async def download_doc(id: str, request: Request, user=Depends(current_user)):
         data = await run_in_threadpool(get_object, doc['storage_path'])
         filename, mime = doc['filename'], doc['content_type']
     elif doc.get('sample'):
-        data = f"DOKUMEN CONTOH — BUKAN KETENTUAN RESMI\n\n{doc['title']}\n{doc['number']}\n\n{doc['description']}\n".encode()
+        data = f"DOKUMEN CONTOH — BUKAN REGULASI RESMI\n\n{doc['title']}\n{doc['number']}\n\n{doc['description']}\n".encode()
         filename, mime = doc['number'].replace('/', '-')+'.txt', 'text/plain; charset=utf-8'
     else: raise HTTPException(404, 'Berkas belum diunggah.')
-    await audit(user, 'DOWNLOAD', 'Ketentuan', doc['title'], request)
+    await audit(user, 'DOWNLOAD', 'Regulasi', doc['title'], request)
     return Response(data, media_type=mime, headers={'Content-Disposition': "attachment; filename*=UTF-8''"+quote(filename), 'X-Content-Type-Options': 'nosniff'})
 
 @router.post('/documents/{id}/action', response_model=Record)
@@ -123,8 +124,8 @@ async def document_action(id: str, body: ActionInput, request: Request, user=Dep
         status = 'published' if body.action == 'approve' else 'rejected'
     update = {'status': status, 'review_note': body.reason, 'updated_at': now()}
     await db.documents.update_one({'id': id}, {'$set': update})
-    await audit(user, body.action.upper(), 'Ketentuan', doc['title'], request)
-    await notify('Ketentuan '+{'pending': 'menunggu review', 'published': 'baru dipublikasikan', 'rejected': 'ditolak'}[status], doc['title'], '/ketentuan', roles=['supervisor'] if status == 'pending' else ['administrator'] if status == 'rejected' else ['employee','administrator','director'])
+    await audit(user, body.action.upper(), 'Regulasi', doc['title'], request)
+    await notify('Regulasi '+{'pending': 'menunggu review', 'published': 'baru dipublikasikan', 'rejected': 'ditolak'}[status], doc['title'], '/regulasi', roles=['supervisor'] if status == 'pending' else ['administrator'] if status == 'rejected' else ['employee','administrator','director'])
     doc.pop('storage_path', None)
     return {**doc, **update}
 
@@ -134,12 +135,19 @@ async def delete_document(id: str, request: Request, user=Depends(current_user))
     doc = await get_doc('documents', id)
     if doc['status'] not in ['draft','rejected']: raise HTTPException(400, 'Hanya draf atau dokumen ditolak yang dapat dihapus.')
     await db.documents.update_one({'id': id}, {'$set': {'is_deleted': True}})
-    await audit(user, 'DELETE', 'Ketentuan', doc['title'], request)
+    await audit(user, 'DELETE', 'Regulasi', doc['title'], request)
     return {'success': True}
 
 @router.get('/notifications', response_model=list[Record])
 async def notifications(user=Depends(current_user)):
-    return await db.notifications.find({'$or': [{'roles': user['role']}, {'user_ids': user['id']}]}, {'_id': 0}).sort('created_at', -1).to_list(50)
+    values = await db.notifications.find({'$or': [{'roles': user['role']}, {'user_ids': user['id']}]}, {'_id': 0}).sort('created_at', -1).to_list(50)
+    for value in values:
+        if value.get('link', '').split('?')[0] == '/ketentuan':
+            value['link'] = value['link'].replace('/ketentuan', '/regulasi', 1)
+            value['title'] = value['title'].replace('Ketentuan', 'Regulasi').replace('ketentuan', 'regulasi')
+            if value.get('detail') == 'Pembaruan ketentuan siap ditinjau oleh Supervisor SISDUR.':
+                value['detail'] = 'Pembaruan regulasi siap ditinjau oleh Supervisor SISDUR.'
+    return values
 
 @router.post('/notifications/{id}/read')
 async def read_notification(id: str, user=Depends(current_user)):
@@ -147,15 +155,22 @@ async def read_notification(id: str, user=Depends(current_user)):
     return {'success': True}
 
 @router.get('/settings', response_model=Record)
-async def settings(user=Depends(current_user)): return await db.settings.find_one({'id': 'main'}, {'_id': 0})
+async def settings(user=Depends(current_user)):
+    values = await db.settings.find_one({'id': 'main'}, {'_id': 0})
+    return {**values, **ContactSettings.model_validate(values).model_dump()}
+
+@router.get('/settings/contact', response_model=ContactSettings)
+async def public_contact():
+    values = await get_settings()
+    return ContactSettings.model_validate(values)
 
 @router.put('/settings', response_model=Record)
 async def save_settings(body: SettingsInput, request: Request, user=Depends(current_user)):
     require(user, 'administrator')
-    await db.settings.update_one({'id': 'main'}, {'$set': body.model_dump()})
+    await db.settings.update_one({'id': 'main'}, {'$set': body.model_dump(exclude_unset=True)})
     invalidate_settings()
     await audit(user, 'UPDATE', 'Parameter', 'Memperbarui parameter aplikasi', request)
-    return await db.settings.find_one({'id': 'main'}, {'_id': 0})
+    return await settings(user)
 
 @router.get('/users', response_model=list[Record])
 async def users(user=Depends(current_user)):
@@ -197,6 +212,9 @@ async def toggle_user(id: str, request: Request, user=Depends(current_user)):
 @router.get('/audit', response_model=list[Record])
 async def audit_list(q: str = '', module: str = '', user=Depends(current_user)):
     require(user, 'administrator', 'supervisor', 'director')
-    query = {'module': module} if module else {}
+    query = {'module': {'$in': ['Ketentuan', 'Regulasi']}} if module in ('Ketentuan', 'Regulasi') else {'module': module} if module else {}
     values = await db.audit.find(query, {'_id': 0}).sort('timestamp', -1).to_list(500)
+    for value in values:
+        if value['module'] == 'Ketentuan':
+            value['module'] = 'Regulasi'
     return [v for v in values if q.lower() in (v['user_name']+' '+v['detail']+' '+v['action']).lower()]

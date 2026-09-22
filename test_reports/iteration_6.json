@@ -1,0 +1,51 @@
+{
+  "summary": "Completed backend+frontend regression for contact settings, regulasi rename/mappings, login/footer/help UI, responsive widths, and draft CRUD flows for regulasi/kuis. Backend contract tests passed (10/10, sequential run). UI validated protocol-based contact links, /ketentuan query preservation to /regulasi, and draft create-edit-delete flows.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [
+      {
+        "flow": "3D canvas pixel nonblank verification",
+        "issue": "Canvas visible and interactive toggle/reset works, but direct pixel-read check returned false (WebGL readback inconclusive in automation run).",
+        "affected_selectors": [
+          "[data-testid='login-mode-interactive']",
+          "[data-testid='bali-3d-scene']",
+          "[data-testid='scene-reset']"
+        ]
+      }
+    ],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_api_regression.py",
+    "/app/backend/tests/test_contact_settings_and_regulasi.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/pytest/pytest_contact_results.xml"
+  ],
+  "action_items": [
+    "Optional: strengthen automated 3D rendering assertion strategy (e.g., delayed frame sampling or scene checksum) if strict nonblank proof is required in CI.",
+    "Auth playbook alignment check: backend currently uses token body/session storage flow and CORS allow_credentials=false with wildcard origin; confirm if this is intended policy."
+  ],
+  "critical_code_review_comments": [
+    "server.py sets CORSMiddleware allow_credentials=False while auth playbook expects credentialed CORS with explicit origins.",
+    "Login response does not set an app auth cookie (observed Set-Cookie only from edge/CDN), so httpOnly app-cookie expectation from optional playbook is not met.",
+    "Parallel pytest execution can cause transient 401 in contact settings test when admin password-rotation test runs concurrently; sequential run (-n 1) is stable."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_contact_settings_and_regulasi.py",
+    "/app/test_reports/iteration_6.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "92%"
+  },
+  "test_credentials": "Read from /app/memory/test_credentials.md and used real accounts (admin/supervisor/karyawan/direksi with bpdjaya3x). CAPTCHA handled via real endpoint + seeded answer hash in test DB for API automation.",
+  "seed_data_creation": "Created and deleted TEST_ prefixed regulasi/kuis drafts via UI. Contact setting temporarily changed for protocol checks, then restored to contact_label='Hubungi administrator SISDUR.' and contact_url=''.",
+  "retest_needed": true,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Key validated states: /api/settings/contact allowlist only; /settings admin-only + validation; /ketentuan?q&status -> /regulasi preserves query in SPA; notifications/audit mapping returns Regulasi labels; seeded sample active counts remain docs=8, quizzes=6. If running full backend tests with xdist parallelism, expect possible transient auth race due admin password-change regression test.",
+  "rca of the issue": "Observed transient backend test failure (401 on admin PUT /settings) only during parallel run. RCA: test_api_regression rotates admin password temporarily, invalidating sessions while contact-settings test simultaneously reuses admin auth flow. Mitigation: run these auth-mutating suites serially (-n 1) or isolate with non-overlapping accounts/fixtures."
+}

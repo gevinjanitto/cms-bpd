@@ -3,6 +3,7 @@ import { ArrowRight, Box, Eye, EyeOff, Image, LockKeyhole, RefreshCw, ShieldChec
 import { api } from '../lib/api';
 import { APP_NAME, BANK_NAME, useBranding } from '../lib/branding';
 import { IconBtn, DeveloperCredit } from '../components/common';
+import { LoginHelp } from '../components/LoginHelp';
 
 const BaliScene = lazy(() => import('../components/scene/BaliScene'));
 
@@ -64,7 +65,7 @@ export default function Login({ onLogin, expired }) {
           <div className="login-captcha"><div className="captcha-label"><span>Verifikasi keamanan</span><span>CAPTCHA</span></div><div className="captcha-row"><div className="captcha-picture">{captchaLoading ? <LoaderCircle size={20} className="spin" /> : captcha && <img data-testid="login-captcha-image" src={captcha.image} alt="Kode CAPTCHA enam karakter" />}</div><button type="button" className="captcha-refresh" data-testid="login-captcha-refresh" onClick={refreshCaptcha} disabled={captchaLoading || busy} title="Muat kode baru" aria-label="Muat kode CAPTCHA baru"><RefreshCw size={18} /></button><input data-testid="login-captcha-answer" aria-label="Jawaban CAPTCHA" required maxLength={6} autoComplete="off" spellCheck={false} value={answer} onChange={e => setAnswer(e.target.value.toUpperCase())} placeholder="Kode di samping" /></div></div>
           {error && <div className="login-error" role="alert" data-testid="login-error">{error}</div>}
           <button className="login-submit" data-testid="login-submit" type="submit" disabled={busy || captchaLoading || !captcha}>{busy ? <><LoaderCircle size={18} className="spin" />Memverifikasi...</> : <>Masuk ke Dashboard<ArrowRight size={18} /></>}</button>
-        </form><div className="login-help"><ShieldCheck size={15} /><p>Akses khusus pengguna yang berwenang.<br /><span>Butuh bantuan? Hubungi administrator SISDUR.</span></p></div></div><footer className="login-panel-footer"><span>© {new Date().getFullYear()} Bank BPD Bali</span><span>Integritas. Kepatuhan. Kepercayaan.</span><DeveloperCredit id="login-panel" /></footer></section>
-    </main><footer className="login-page-footer"><span>Terdaftar dan diawasi oleh Otoritas Jasa Keuangan & Bank Indonesia</span><DeveloperCredit id="login-page" /><span>COMPLIANCE MANAGEMENT SYSTEM</span></footer>
+        </form><LoginHelp /></div></section>
+    </main><footer className="login-page-footer" data-testid="login-footer"><span data-testid="login-copyright">© {new Date().getFullYear()} Bank BPD Bali</span><span data-testid="login-footer-motto">Integritas. Kepatuhan. Kepercayaan.</span><DeveloperCredit id="login-page" /></footer>
   </div>;
 }

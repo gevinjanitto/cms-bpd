@@ -10,12 +10,14 @@ from quiz_routes import router as quiz_router
 from reports import router as report_router
 from auth import router as auth_router, initialize_auth
 from media import router as media_router
+from regulation_migration import migrate_sample_regulation_terms
 
 @asynccontextmanager
 async def lifespan(app):
     await db.sessions.create_index('token_hash', unique=True)
     await db.results.create_index([('quiz_id', 1), ('user_id', 1)], unique=True)
     await seed_data()
+    await migrate_sample_regulation_terms()
     await initialize_auth()
     yield
     client.close()

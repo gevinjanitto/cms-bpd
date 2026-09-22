@@ -145,5 +145,5 @@ export default function BaliScene() {
     <ambientLight intensity={1.8} /><hemisphereLight args={['#fff9e9', '#9cbaa7', 1.2]} />
     <directionalLight position={[-3, 8, 5]} intensity={2.4} castShadow shadow-mapSize={[1024, 1024]} shadow-camera-left={-5} shadow-camera-right={5} shadow-camera-top={6} shadow-camera-bottom={-4} shadow-bias={-.001} />
     <Office /><CameraControl reset={reset} />
-  </Canvas></div><button className="scene-reset" type="button" data-testid="scene-reset" title="Atur ulang sudut pandang" aria-label="Atur ulang sudut pandang" onClick={() => setReset(v => v + 1)}><RotateCcw size={17} /></button><span className="scene-caption">Bali Dwipa Jaya · 3D</span></>;
+  </Canvas></div><button className="scene-reset" type="button" data-testid="scene-reset" title="Atur ulang sudut pandang" aria-label="Atur ulang sudut pandang" onClick={() => setReset(v => v + 1)}><RotateCcw size={17} /></button></>;
 }

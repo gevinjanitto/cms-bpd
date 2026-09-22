@@ -1,0 +1,8 @@
+.settings-fields { padding: 0; margin: 0; border: 0; min-width: 0; }
+.settings-section > div { min-width: 0; }
+.settings-section .settings-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.settings-section input { min-width: 0; }
+.page-footer .developer-credit { flex-wrap: wrap; font-size: inherit; }
+@media (max-width: 760px) {
+  .settings-section .settings-form { grid-template-columns: minmax(0, 1fr); }
+}

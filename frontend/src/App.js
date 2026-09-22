@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from './components/ui/sonner';
 import { Layout } from './components/Layout';
 import { Loading } from './components/common';
@@ -15,6 +15,12 @@ import SettingsPage from './pages/Settings';
 import './App.css';
 import './styles/redesign.css';
 import './styles/login.css';
+import './styles/settings.css';
+
+function LegacyRegulationRedirect() {
+  const { search, hash } = useLocation();
+  return <Navigate to={`/regulasi${search}${hash}`} replace />;
+}
 
 function Workspace() {
   const [user, setUser] = useState(null);
@@ -74,7 +80,8 @@ function Workspace() {
   const guard = (roles, page) => roles.includes(user.role) ? page : <Navigate to="/" replace />;
   return <Layout user={user} onLogout={logout}><Routes>
     <Route path="/" element={<Dashboard user={user} />} />
-    <Route path="/ketentuan" element={<Documents user={user} />} />
+    <Route path="/regulasi" element={<Documents user={user} />} />
+    <Route path="/ketentuan" element={<LegacyRegulationRedirect />} />
     <Route path="/kuis" element={<Quizzes user={user} />} />
     <Route path="/kuis/:id/kerjakan" element={guard(['employee'], <TakeQuiz user={user} />)} />
     <Route path="/monitoring" element={guard(['administrator', 'supervisor', 'director'], <Monitoring user={user} />)} />

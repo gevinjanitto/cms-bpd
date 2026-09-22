@@ -78,7 +78,7 @@ async def quizzes(user=Depends(current_user)):
 async def create_quiz(body: QuizInput, request: Request, user=Depends(current_user)):
     require(user, 'administrator')
     doc = await get_doc('documents', body.document_id)
-    if doc['status'] != 'published': raise HTTPException(400, 'Kuis harus terkait ketentuan yang sudah dipublikasikan.')
+    if doc['status'] != 'published': raise HTTPException(400, 'Kuis harus terkait regulasi yang sudah dipublikasikan.')
     quiz = {**body.model_dump(mode='json'), 'id': uid(), 'status': 'draft', 'created_by': user['id'], 'created_at': now(), 'updated_at': now(), 'is_deleted': False}
     await db.quizzes.insert_one(quiz.copy())
     await audit(user, 'CREATE', 'Kuis', body.title, request)
@@ -101,7 +101,7 @@ async def edit_quiz(id: str, body: QuizInput, request: Request, user=Depends(cur
     q = await get_doc('quizzes', id)
     if q['status'] not in ['draft','rejected']: raise HTTPException(400, 'Kuis aktif tidak dapat diubah.')
     doc = await get_doc('documents', body.document_id)
-    if doc['status'] != 'published': raise HTTPException(400, 'Ketentuan belum dipublikasikan.')
+    if doc['status'] != 'published': raise HTTPException(400, 'Regulasi belum dipublikasikan.')
     data = {**body.model_dump(mode='json'), 'updated_at': now()}
     await db.quizzes.update_one({'id': id}, {'$set': data})
     await audit(user, 'UPDATE', 'Kuis', body.title, request)
