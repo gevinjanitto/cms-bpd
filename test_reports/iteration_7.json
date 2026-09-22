@@ -1,0 +1,38 @@
+{
+  "summary": "Completed focused backend+frontend regression for regulasi activation controls, role restrictions, quiz linkage guards, dashboard impact, and login responsive/alignment requirements.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_document_activation_regression.py",
+    "/app/test_reports/pytest/pytest_activation_results.xml"
+  ],
+  "action_items": [
+    "Optional hardening: if auth playbook must be enforced globally, align login with httpOnly cookie policy, credentialed CORS explicit origins, and lockout threshold expectation."
+  ],
+  "critical_code_review_comments": [
+    "Auth playbook mismatch remains: /api/auth/login returns token body only (no app httpOnly cookie set).",
+    "CORS in backend/server.py still uses allow_credentials=false with wildcard origin; not aligned with credentialed CORS expectation in optional playbook.",
+    "auth.py lockout triggers at 3 failed password attempts (not 5 as requested in optional playbook checks)."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_document_activation_regression.py",
+    "/app/test_reports/iteration_7.json"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": "Read from /app/memory/test_credentials.md. Used admin/supervisor/karyawan/direksi (password bpdjaya3x) via generated Bearer tokens from real captcha login flow.",
+  "seed_data_creation": "Created TEST_ACT_* documents and TEST Quiz* artifacts in regression tests; teardown marks them deleted. UI deactivated/reactivated existing doc-0 temporarily and restored original active state.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Coverage completed: admin-only activation endpoint auth+StrictBool+404+idempotent audit; legacy is_active default true; inactive visibility/download restrictions; stale doc/quiz action 409; quiz create/edit/submit/approve inactive guards; dashboard pending-task exclusion/restoration; QuizForm request confirmed /documents?status=published&active=true and inactive regulasi hidden from options; login alignment/mobile order/no overflow validated at widths 320/390/760/768/1024/1440 plus dark mode.",
+  "rca of the issue": "No blocking defects found in requested activation/layout scope. Optional auth playbook deviations are implementation-policy mismatches, not regressions from this change set: lockout count (3), cookie model (Bearer token body), and CORS credential mode are defined in current auth/server code paths."
+}

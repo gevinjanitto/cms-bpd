@@ -78,6 +78,7 @@ async def quizzes(user=Depends(current_user)):
 async def create_quiz(body: QuizInput, request: Request, user=Depends(current_user)):
     require(user, 'administrator')
     doc = await get_doc('documents', body.document_id)
+    if doc.get('is_active') is False: raise HTTPException(409, 'Regulasi nonaktif tidak dapat digunakan untuk kuis. Pilih regulasi aktif.')
     if doc['status'] != 'published': raise HTTPException(400, 'Kuis harus terkait regulasi yang sudah dipublikasikan.')
     quiz = {**body.model_dump(mode='json'), 'id': uid(), 'status': 'draft', 'created_by': user['id'], 'created_at': now(), 'updated_at': now(), 'is_deleted': False}
     await db.quizzes.insert_one(quiz.copy())
@@ -101,6 +102,7 @@ async def edit_quiz(id: str, body: QuizInput, request: Request, user=Depends(cur
     q = await get_doc('quizzes', id)
     if q['status'] not in ['draft','rejected']: raise HTTPException(400, 'Kuis aktif tidak dapat diubah.')
     doc = await get_doc('documents', body.document_id)
+    if doc.get('is_active') is False: raise HTTPException(409, 'Regulasi nonaktif tidak dapat digunakan untuk kuis. Pilih regulasi aktif.')
     if doc['status'] != 'published': raise HTTPException(400, 'Regulasi belum dipublikasikan.')
     data = {**body.model_dump(mode='json'), 'updated_at': now()}
     await db.quizzes.update_one({'id': id}, {'$set': data})
@@ -128,6 +130,9 @@ async def quiz_action(id: str, body: ActionInput, request: Request, user=Depends
         if q['status'] != 'pending': raise HTTPException(400, 'Kuis belum diajukan untuk review.')
         if body.action == 'reject' and not body.reason.strip(): raise HTTPException(400, 'Alasan penolakan wajib diisi.')
         status = 'published' if body.action == 'approve' else 'rejected'
+    if body.action in ('submit', 'approve'):
+        doc = await get_doc('documents', q['document_id'])
+        if doc.get('is_active') is False: raise HTTPException(409, 'Regulasi terkait nonaktif. Aktifkan regulasi atau pilih regulasi aktif sebelum melanjutkan.')
     await db.quizzes.update_one({'id': id}, {'$set': {'status': status, 'review_note': body.reason, 'updated_at': now()}})
     await audit(user, body.action.upper(), 'Kuis', q['title'], request)
     if status == 'published':

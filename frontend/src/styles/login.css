@@ -48,7 +48,7 @@
 .captcha-row input { min-width: 0; width: 100%; height: 46px; font-size: 11px; padding: 9px 10px; }
 .login-submit { height: 47px; border: none; border-radius: 6px; background: #187c57; color: #fff; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 12px; font-weight: 650; margin-top: 3px; }
 .login-submit:hover { background: #105f41; transform: translateY(-1px); }
-.login-help { display: flex; align-items: center; justify-content: center; gap: 9px; color: #809c87; padding-top: 22px; margin-top: 24px; border-top: 1px solid var(--line); }
+.login-help { display: flex; align-items: center; justify-content: flex-start; text-align: left; gap: 9px; color: #809c87; padding-top: 22px; margin-top: 24px; border-top: 1px solid var(--line); }
 .login-help p { min-width: 0; overflow-wrap: anywhere; }
 .login-help a { color: var(--green); text-decoration: underline; text-underline-offset: 3px; }
 .login-help a:hover { opacity: .75; }
@@ -75,7 +75,8 @@
 @media (max-width: 760px) {
   .login-page-footer > .developer-credit:last-child { display: inline-flex; }
   .login-welcome h1 br { display: revert; }
-  .login-art { min-height: 360px; }
+  .login-art { min-height: 360px; order: 0; }
+  .login-form-panel { order: 1; }
   .login-art-copy { right: 24px; }
   .login-scene-stage { inset: 105px 0 23px; }
   .login-illustration { object-fit: contain; object-position: center bottom; }

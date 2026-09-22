@@ -1,4 +1,7 @@
 .settings-fields { padding: 0; margin: 0; border: 0; min-width: 0; }
+.document-availability { display: flex; align-items: center; gap: 10px; }
+.document-availability .status-Aktif { color: #26764c; background: #edf7ef; }
+.document-availability .status-Nonaktif { color: #a34444; background: #fcf0ef; }
 .settings-section > div { min-width: 0; }
 .settings-section .settings-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .settings-section input { min-width: 0; }

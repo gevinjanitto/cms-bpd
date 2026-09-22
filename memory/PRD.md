@@ -8,6 +8,7 @@ Permintaan sesi ini (repo https://github.com/gevinjanitto/cms-bpd):
 3. Deploy: frontend di Vercel (https://cms-bpd.vercel.app), backend di Railway (https://cms-bpd-production.up.railway.app), DB MongoDB Atlas.
 4. Permintaan 22 Sep 2026: "lakukan semua perintah yg ada di gambar. Di menu Ketentuan ubah jadi regulasi, ubah semuanya ya termasuk pas buat kuis. di pengaturan hapus identitas gambar dan koneksi sistem (tambahkan pengaturan hubungi yag ada di gambar)". Penegasan: "di gambar sudah saya isikan note ikutkan semuanya itu juga ya".
 5. Catatan lampiran: hapus segmen footer "COMPLIANCE MANAGEMENT SYSTEM · Data contoh"; ratakan ikon bantuan ke tengah dan tambahkan pengaturan tautan kontak admin; pindahkan footer copyright/motto/MaiHarta ke paling bawah menggantikan footer lama; hapus caption "Bali Dwipa Jaya · 3D" pada objek interaktif.
+6. Lanjutan 22 Sep 2026: "buat di menu regulasi bisa dinonaktifin hanya oleh admin"; pengguna menyetujui nonaktif/aktif kembali per regulasi tanpa menghapus data. Tambahan: "ya itu dan tambabhakan jua buat yg hubungi di login tu sejajar ke kiri dengan tombol masuk, dan di tampilan mobilenya gambar diatas dan kolom login dibawah".
 
 ## Arsitektur
 - Backend FastAPI (port 8001, prefix /api): core, routes, quiz_routes, reports, storage/media, seed, auth. Auth kustom: username + bcrypt + CAPTCHA gambar sekali pakai, token opaque 12 jam, lockout 5 menit setelah 3x gagal, rate limit per IP.
@@ -16,6 +17,7 @@ Permintaan sesi ini (repo https://github.com/gevinjanitto/cms-bpd):
 - `backend/contact_settings.py`: validasi teks/tautan kontak; GET publik `/api/settings/contact` hanya membuka `contact_label` dan `contact_url`. PUT `/api/settings` tetap administrator-only, invalidasi cache, kompatibel payload numerik lama.
 - `frontend/src/components/LoginHelp.jsx` membaca kontak publik. `Settings.jsx` hanya Parameter Kuis, Keamanan Sesi, Hubungi; tidak lagi bergantung pada `/media/status`. `DocumentForm.jsx` dipisah dari halaman dokumen.
 - `backend/regulation_migration.py` mengubah hanya teks bawaan sampel dengan ID/nilai tepat saat startup; tidak mengubah konten pengguna, jumlah data, relasi, atau audit tersimpan. Modul audit/notifikasi lama dinormalisasi saat dibaca.
+- Aktivasi regulasi: `documents.is_active` terpisah dari `status` publikasi. Data lama tanpa flag dianggap aktif. PUT `/api/documents/{id}/activation` menerima boolean ketat, administrator-only, idempoten, dan mencatat ACTIVATE/DEACTIVATE. `DocumentActivation.jsx` menyediakan switch, badge, dan konfirmasi.
 - Akun: admin/supervisor/karyawan/direksi, password dari env BOOTSTRAP_PASSWORD. Lihat memory/test_credentials.md.
 - Deploy Railway: backend Root Directory `backend` (backend/Dockerfile), frontend Vercel/Railway dengan REACT_APP_BACKEND_URL saat build. Lihat SETUP.md.
 
@@ -48,6 +50,16 @@ Permintaan sesi ini (repo https://github.com/gevinjanitto/cms-bpd):
 - Gap awal pembacaan piksel WebGL ditutup self-test: 14.400 piksel opaque dan 1.288 warna unik, checksum berubah saat drag/reset, caption tidak ada. Bukti di `/app/test_reports/iteration_6_followup.md`.
 - Tidak ada API MOCKED baru. Kontak belum memiliki tujuan resmi karena pengguna belum memberikannya. Jumlah sampel tetap 8 regulasi dan 6 kuis. Kredensial tetap sesuai `test_credentials.md`.
 
+### 22 Sep 2026 — Aktivasi regulasi admin dan susunan login (selesai & diuji)
+- Admin dapat menonaktifkan/mengaktifkan regulasi pada tabel maupun detail, dengan konfirmasi/batal, badge Aktif/Nonaktif, dan filter aktivasi. Status publikasi dan berkas tetap tersimpan; reaktivasi tidak melewati proses persetujuan.
+- Backend menolak perubahan aktivasi dari supervisor, karyawan, direksi, dan pengguna tanpa sesi. Input non-boolean ditolak. Permintaan berulang dengan nilai sama tidak menggandakan audit.
+- Regulasi nonaktif hanya ada dalam daftar admin; unduhan nonadmin ditolak. Dashboard menghitung regulasi aktif saja (termasuk dokumen terbaru dan tugas review).
+- Regulasi nonaktif tidak tersedia dalam pilihan kuis baru. API pembuatan/edit kuis, pengajuan draf dan persetujuan kuis menolak regulasi terkait yang nonaktif. Kuis yang sudah dipublikasikan, pengerjaan yang ada, dan hasil kuis tidak dinonaktifkan/dihapus oleh perubahan ini.
+- Bantuan/ikon login kini rata kiri sejajar tepi tombol Masuk (menggantikan posisi tengah dari permintaan sebelumnya); ikon tetap terpusat vertikal.
+- Mobile <=760px: gambar/3D di atas, formulir login di bawah. Autofocus username dihapus agar pembukaan halaman tidak melewati gambar atau langsung membuka keyboard. Desktop tetap berdampingan.
+- Build frontend dan compile Python lulus; smoke screenshot membuktikan bantuan sejajar tombol. Laporan `/app/test_reports/iteration_7.json`: 7/7 tes backend fokus lulus, frontend 100%; konfirmasi/cancel, persist/reload, hak akses, filter/pilihan kuis, layout 320/390/760/768/1024/1440, dark mode dan mode 3D diverifikasi. Tidak ada API/flow MOCKED.
+- Tidak ada kode autentikasi/kredensial diubah. Catatan opsional cookie/CORS/threshold dari testing adalah kebijakan auth lama, bukan regresi. Data contoh doc-0 yang diuji dipulihkan; fixture pengujian terpisah ditandai terhapus.
+
 ## Backlog / Next
 - P0: Tidak ada bug pemblokir pada perubahan sesi ini. Menunggu pengguna memeriksa hasil visual dan memasukkan tautan bantuan resmi di Pengaturan → Hubungi.
 - P1: Verifikasi pengguna untuk login/kecepatan lingkungan produksi dari sesi sebelumnya masih belum tercatat; benchmark subdetik preview tidak membuktikan latency database produksi sudah selesai. Diagnostik tersedia di `/api/health?db_check=true` dan `/api/auth/status`.
@@ -55,4 +67,5 @@ Permintaan sesi ini (repo https://github.com/gevinjanitto/cms-bpd):
 - P1 (dari KAK): AD/SSO, SIM SDM, mail/OTP, keamanan infrastruktur bank — memerlukan keputusan pemilik sistem.
 - P2: Pisahkan stylesheet/page component panjang; fixture teardown pytest.
 - P2: Pisahkan fixture akun tes rotasi password dari suite lain jika kelak tes dijalankan paralel; saat ini jalankan suite serial untuk menghindari invalidasi sesi saling silang.
+- P2 (opsional): alasan penonaktifan regulasi sebagai bagian audit, bila pengguna membutuhkan dokumentasi keputusan yang lebih rinci.
 - Saran pengembangan: tambahkan jam layanan SISDUR pada kontak bantuan bila diperlukan.

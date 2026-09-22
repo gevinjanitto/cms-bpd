@@ -37,7 +37,7 @@ async def aggregate(unit='', period='', user=None):
 
 @router.get('/dashboard')
 async def dashboard(unit: str='', period: str='', user=Depends(current_user)):
-    (users,quizzes,results,pairs,pending), docs = await asyncio.gather(aggregate(unit,period,user), db.documents.find({'is_deleted': {'$ne':True}}, {'_id':0, 'storage_path':0}).to_list(1000))
+    (users,quizzes,results,pairs,pending), docs = await asyncio.gather(aggregate(unit,period,user), db.documents.find({'is_deleted': {'$ne':True}, 'is_active': {'$ne':False}}, {'_id':0, 'storage_path':0}).to_list(1000))
     published = [d for d in docs if d['status']=='published']
     graded = [r for r in results if r['status'] != 'reviewing']
     passed = sum(r['status']=='passed' for r in graded)

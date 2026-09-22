@@ -10,7 +10,7 @@ export const QuizForm = ({ initial, onClose, onSaved }) => {
   const [form, setForm] = useState(initial || { title: '', description: '', document_id: '', passing_grade: 75, duration: 30, units: [], positions: [], start_date: today, end_date: today, questions: [newQuestion()] });
   const [docs, setDocs] = useState([]), [busy, setBusy] = useState(false);
   useEffect(() => {
-    api.get('/documents?status=published').then(r => setDocs(r.data)).catch(() => {});
+    api.get('/documents?status=published&active=true').then(r => setDocs(r.data)).catch(() => {});
     if (!initial) api.get('/settings').then(r => setForm(f => ({ ...f, passing_grade: r.data.passing_grade, duration: r.data.quiz_duration }))).catch(() => {});
   }, [initial]);
   const change = (k, v) => setForm(f => ({ ...f, [k]: v }));
@@ -27,7 +27,7 @@ export const QuizForm = ({ initial, onClose, onSaved }) => {
   return <Modal title={initial ? 'Edit Kuis' : 'Buat Kuis Baru'} description="Materi evaluasi pemahaman regulasi" open onClose={() => !busy && onClose()} wide>
     <form onSubmit={save}><div className="form-grid">
       <Field className="field-full" label="Judul Kuis *"><input data-testid="quiz-title-input" required minLength={3} value={form.title} onChange={e => change('title', e.target.value)} placeholder="Contoh: Pemahaman Regulasi APU & PPT" /></Field>
-      <Field className="field-full" label="Regulasi Terkait *"><select data-testid="quiz-document-input" required value={form.document_id} onChange={e => change('document_id', e.target.value)}><option value="">Pilih regulasi yang sudah dipublikasikan</option>{docs.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></Field>
+      <Field className="field-full" label="Regulasi Terkait *"><select data-testid="quiz-document-input" required value={form.document_id} onChange={e => change('document_id', e.target.value)}><option value="">Pilih regulasi aktif yang sudah dipublikasikan</option>{form.document_id && !docs.some(d => d.id === form.document_id) && <option value={form.document_id} disabled>Regulasi tidak tersedia — pilih regulasi aktif</option>}{docs.map(d => <option key={d.id} value={d.id}>{d.title}</option>)}</select></Field>
       <Field className="field-full" label="Deskripsi"><textarea data-testid="quiz-description-input" rows={2} value={form.description} onChange={e => change('description', e.target.value)} placeholder="Ruang lingkup evaluasi..." /></Field>
       <Field label="Tanggal Mulai"><input data-testid="quiz-start-input" type="date" required value={form.start_date} onChange={e => change('start_date', e.target.value)} /></Field>
       <Field label="Tanggal Selesai"><input data-testid="quiz-end-input" type="date" required min={form.start_date} value={form.end_date} onChange={e => change('end_date', e.target.value)} /></Field>

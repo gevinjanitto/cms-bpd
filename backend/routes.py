@@ -4,7 +4,7 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from fastapi.responses import Response
 from starlette.concurrency import run_in_threadpool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictBool
 from core import db, now, uid, current_user, require, audit, notify, get_doc, Record, invalidate_settings, get_settings
 from contact_settings import ContactSettings
 from storage import put_object, get_object
@@ -20,6 +20,8 @@ class DocumentInput(BaseModel):
 class ActionInput(BaseModel):
     action: Literal['submit', 'approve', 'reject']
     reason: str = ''
+class DocumentActivationInput(BaseModel):
+    is_active: StrictBool
 class SettingsInput(ContactSettings):
     passing_grade: int = Field(ge=1, le=100)
     idle_timeout: int = Field(ge=60, le=3600)
@@ -53,18 +55,20 @@ async def logout(request: Request):
     return {'success': True}
 
 @router.get('/documents', response_model=list[Record])
-async def documents(q: str = '', category: str = '', status: str = '', user=Depends(current_user)):
+async def documents(q: str = '', category: str = '', status: str = '', active: bool | None = None, user=Depends(current_user)):
     query = {'is_deleted': {'$ne': True}}
+    if user['role'] != 'administrator' or active is True: query['is_active'] = {'$ne': False}
+    elif active is False: query['is_active'] = False
     if user['role'] not in ['administrator', 'supervisor']: query['status'] = 'published'
     elif status: query['status'] = status
     if category: query['category'] = category
     records = await db.documents.find(query, {'_id': 0, 'storage_path': 0}).sort('created_at', -1).to_list(1000)
-    return [r for r in records if q.lower() in (r['title']+' '+r['number']).lower()]
+    return [{**r, 'is_active': r.get('is_active', True)} for r in records if q.lower() in (r['title']+' '+r['number']).lower()]
 
 @router.post('/documents', response_model=Record)
 async def create_document(body: DocumentInput, request: Request, user=Depends(current_user)):
     require(user, 'administrator')
-    doc = {**body.model_dump(), 'id': uid(), 'status': 'draft', 'created_by': user['id'], 'created_at': now(), 'updated_at': now(), 'filename': None, 'is_deleted': False, 'sample': False}
+    doc = {**body.model_dump(), 'id': uid(), 'status': 'draft', 'is_active': True, 'created_by': user['id'], 'created_at': now(), 'updated_at': now(), 'filename': None, 'is_deleted': False, 'sample': False}
     await db.documents.insert_one(doc.copy())
     await audit(user, 'CREATE', 'Regulasi', 'Membuat ' + doc['title'], request)
     return doc
@@ -78,6 +82,20 @@ async def update_document(id: str, body: DocumentInput, request: Request, user=D
     await db.documents.update_one({'id': id}, {'$set': values})
     await audit(user, 'UPDATE', 'Regulasi', body.title, request)
     return {**doc, **values}
+
+@router.put('/documents/{id}/activation', response_model=Record)
+async def set_document_activation(id: str, body: DocumentActivationInput, request: Request, user=Depends(current_user)):
+    require(user, 'administrator')
+    doc = await get_doc('documents', id)
+    query = {'id': id, 'is_deleted': {'$ne': True}, 'is_active': False if body.is_active else {'$ne': False}}
+    values = {'is_active': body.is_active, 'updated_at': now()}
+    result = await db.documents.update_one(query, {'$set': values})
+    if result.modified_count:
+        await audit(user, 'ACTIVATE' if body.is_active else 'DEACTIVATE', 'Regulasi',
+                    ('Mengaktifkan' if body.is_active else 'Menonaktifkan') + ' regulasi: ' + doc['title'], request)
+    record = await db.documents.find_one({'id': id, 'is_deleted': {'$ne': True}}, {'_id': 0, 'storage_path': 0})
+    if not record: raise HTTPException(404, 'Data tidak ditemukan.')
+    return {**record, 'is_active': record.get('is_active', True)}
 
 @router.post('/documents/{id}/upload')
 async def upload(id: str, request: Request, file: UploadFile = File(...), user=Depends(current_user)):
@@ -98,6 +116,7 @@ async def upload(id: str, request: Request, file: UploadFile = File(...), user=D
 @router.get('/documents/{id}/download')
 async def download_doc(id: str, request: Request, user=Depends(current_user)):
     doc = await get_doc('documents', id)
+    if doc.get('is_active') is False: require(user, 'administrator')
     if doc['status'] != 'published': require(user, 'administrator', 'supervisor')
     if doc.get('storage_path'):
         data = await run_in_threadpool(get_object, doc['storage_path'])
@@ -112,6 +131,7 @@ async def download_doc(id: str, request: Request, user=Depends(current_user)):
 @router.post('/documents/{id}/action', response_model=Record)
 async def document_action(id: str, body: ActionInput, request: Request, user=Depends(current_user)):
     doc = await get_doc('documents', id)
+    if doc.get('is_active') is False: raise HTTPException(409, 'Regulasi nonaktif. Minta administrator mengaktifkan regulasi terlebih dahulu.')
     if body.action == 'submit':
         require(user, 'administrator')
         if doc['status'] not in ['draft','rejected']: raise HTTPException(400, 'Status dokumen tidak sesuai.')
